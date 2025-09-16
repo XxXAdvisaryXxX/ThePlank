@@ -1,4 +1,3 @@
-```Pascal
 {$I Wasplib/osrs.simba}
  type
   TCannonBallState = enum
@@ -92,4 +91,4 @@ script: Rscript;
 begin
   script.init;
   script.run;
-end;```
+end;
