@@ -1,0 +1,319 @@
+{$I Wasplib/osrs.simba}
+type
+  TGiantStates = enum
+   (WALKING_SPOT,
+    WAITING_FOR_KILL,
+    LOOTING_PILE,
+    UNDER_ATTACK_NOT_SAFE,
+    INSPOT_ATTACK,
+    INV_FULL_ALCH_BURY);
+
+    RScript = record
+      SafeSpot1,SafeSpot2,Safespot3,MonsterLocation: Tpoint;
+      Ent1,Ent2,safeent,MyDrop:TRSEntity; //Ent1 in Area 1, Ent2 in Area 2
+      area1,area2,safearea,dropfilter:Tpointarray;
+      keeperslist,takelist:Tstringarray;
+      alchlist:TRSItemarray;
+    End;
+
+
+Procedure RScript.Init;
+Begin
+  Map.Setup([Chunk(Box(39,155,40,154), 0)]);
+  //Map.Walker.WalkUpText := ['Walk here'];
+
+  Self.Safespot1:= [6176,10858];
+  Self.Safespot2:= [6160,10878];
+  Self.Safespot3:= [6176,10874];
+
+  self.area1:= [[6160,10878]]; {West}
+  self.area2:= [[6176,10874]]; {East}
+  self.safearea:= [[6176,10858]];
+  self.dropfilter:= [[6168,10882]];
+
+  Self.ent1 := TRSEntity.Create(@map.walker,[2,2,14],8,self.area1,['Fire giant'],[ERSMinimapDot.NPC]);
+  Self.ent1.Track:= True;
+  Self.ent1.Finder.Colors += [$374068, 0.000, EColorSpace.HSL, [1.000, 1.000, 1.000]];
+
+  Self.ent2 := TRSEntity.Create(@map.walker,[2,2,14],10,self.area2,['Fire giant'],[ERSMinimapDot.NPC]);
+  Self.ent2.Track:= True;
+  Self.ent2.Finder.Colors += [$374068, 0.000, EColorSpace.HSL, [1.000, 1.000, 1.000]];
+
+  Self.safeent := TRSEntity.Create(@map.walker,[2,2,14],20,self.safearea,['Fire giant'],[ERSMinimapDot.NPC]);
+  Self.safeent.Track:= True;
+  Self.safeent.Finder.Colors += [$374068, 0.000, EColorSpace.HSL, [1.000, 1.000, 1.000]];
+
+  Self.alchlist:= ['Rune arrow','Rune scimitar','Fire battlestaff','Rune 2h sword','Rune battleaxe','Runite bar','Rune sq shield','Dragon med helm','Shield left half','Dragon spear'];
+  self.keeperslist:=['Big bones','Law rune','Chaos rune','Rune arrow','arrow','dart','kniv','Blood rune','scimitar','Fire battlestaff','Uncut sapphire','Uncut emerald','Uncut ruby','Rune 2h sword','Rune battleaxe','Runite bar','Uncut diamond','Loop half of key','Tooth half of key','Rune sq shield','Dragon med helm','Shield left half','Dragon spear','Nature rune','Fire rune'];
+  self.takelist:= ['Take Big bones','Take Law rune','Take Chaos rune','Take Rune arrow','Take arrow','Take dart','Take kniv','Take Blood rune','Take scimitar','Take Fire battlestaff','Take Uncut sapphire','Take Uncut emerald','Take Uncut ruby','Take Rune 2h sword','Take Rune battleaxe','Take Runite bar','Take Uncut diamond','Take Loop half of key','Take Tooth half of key','Take Rune sq shield','Take Dragon med helm','Take Shield left half','Take Dragon spear','Take Nature rune','Take Fire rune'];
+
+  Self.mydrop := TRSEntity.Create(@map.walker,[1,1,1],24,self.dropfilter,self.keeperslist,[ERSMinimapDot.ITEM]);
+  Self.mydrop.Finder.Colors +={[$CFD0D6, 4.289, EColorSpace.RGB, [1.080, 0.982, 0.939]]}[$D3D4D9, 2.864, EColorSpace.RGB, [1.074, 0.997, 0.931]];
+  MM2MS.Setup();
+end;
+
+Function TakingDamage():Boolean;
+Var
+AllHs:TRSHitsplatarray;
+Begin
+    If TRSHitSplat.Find (allhs) Then
+      Result:= True;
+      //Writeln ('Target Hitsplats Visible:', (Result));
+end;
+
+Procedure Rscript.WaitingForKill;
+begin
+  If takingdamage =True then
+    //writeln 'Still Waiting';
+  begin
+    sleepuntil((takingdamage=false),8000,80000);
+    //Writeln 'Waking up from sleep';
+  end;
+end;
+
+{Procedure Rscript.SafeAttack;
+begin
+  If map.position<>Self.SafeSpot1 then
+    Map.Walker.Webwalk(Self.Safespot1);
+  begin
+    If TakingDamage()=False Then
+      self.safeent.Select(['Attack'],25);sleep (3000,4000);
+    begin
+      If TakingDamage()=True Then
+        Map.Walker.Webwalk(Self.Safespot1);
+          Sleep (600,850);
+             self.safeent.Select(['Attack'],25);
+    end;
+  end;
+end;}
+
+Procedure Rscript.AttackSetup;
+Begin
+  If Map.Walker.InRange(Self.SafeSpot2,10) then
+    Map.Walker.webwalk (self.safespot2,0,0,true) Else
+      Map.Walker.webwalk (Self.Safespot3,0,0,true);
+  begin
+    Sleepuntil ((minimap.isplayermoving=false),100,8000);
+  end;
+
+end;
+
+Procedure RScript.EngageTarget;
+var
+bars:trshpbararray;
+run:rscript;
+begin
+ If Map.walker.inrange (self.SafeSpot2,10) Then
+    self.ent2.Interact(['Attack'],25) Else
+      self.ent1.Interact(['Attack'],25);
+    //If minimap.IsPlayerMoving(2) and hitsplat.find then
+
+begin
+    sleepuntil ((TRSHPBar.Find(bars)=true),500,4000);
+  end;
+end;
+
+Function Rscript.TargetCloseToDeath():Boolean;
+Var
+bars:TRSHPbararray;
+bar:TRSHpbar;
+loc:tpoint;
+begin
+writeln 'Waiting For Kill';
+  begin
+  Repeat
+  if TRSHPBar.Find(bars) then
+    for bar in bars do
+      sleep (200,800);until
+      bar.percent<40;
+    begin
+      Writeln 'Monster close to death';
+    end;
+  end;
+    begin
+     Result:= (SleepUntil((bar.Percent<25),80,8000)=True);
+     Writeln ('Monster Should Be Dead Soon:', (Result));       //debugging
+     Sleepuntil ((Takingdamage=False),1800, 10000);
+      Writeln 'Target Confirmed Dead.. Engaging Lootpile';    //Debugging
+     Sleepuntil ((Takingdamage=False),1800, 10000);
+    end;
+end;
+
+Function Rscript.BuryBones():Boolean;
+ var
+  slot: Integer;
+  slots: TIntegerArray;
+begin
+  Inventory.Items.FindAll(['Big bones'], slots);
+
+  for slot in slots do
+  begin
+    Inventory.Slots.Interact(slot, 'Bury');
+  Sleep(750, 850);
+  end;
+end;
+
+Function Rscript.ScanandAlch():Boolean;
+Var
+box: Tbox;
+begin
+ If Inventory.items.find ('Rune sq shield',box) then
+  begin
+    magic.open;
+    Magic.CastSpell(ERSSpell.HIGH_LEVEL_ALCHEMY);
+    sleep (320,480);
+    Inventory.items.Click('Rune sq shield', Emousebutton.LEFT);
+    Sleep(750, 850);
+ end;
+    If Inventory.items.find ('Rune scimitar',box) then
+      begin
+      magic.open;
+      Magic.CastSpell(ERSSpell.HIGH_LEVEL_ALCHEMY);
+      sleep (320,480);
+      Inventory.items.Click('Rune scimitar', Emousebutton.LEFT);
+      Sleep(750, 850);
+      end;
+      If Inventory.items.find ('Fire battlestaff',box) then
+      begin
+        magic.open;
+        Magic.CastSpell(ERSSpell.HIGH_LEVEL_ALCHEMY);
+        sleep (320,480);
+        Inventory.items.Click('Fire battlestaff', Emousebutton.LEFT);
+        Sleep(750, 850);
+      end;
+        If Inventory.items.find ('Rune 2h sword',box) then
+      begin
+        magic.open;
+        Magic.CastSpell(ERSSpell.HIGH_LEVEL_ALCHEMY);
+        sleep (320,480);
+        Inventory.items.Click('Rune 2h sword', Emousebutton.LEFT);
+        Sleep(750, 850);
+      end;
+          If Inventory.items.find ('Rune battleaxe',box) then
+      begin
+        magic.open;
+        Magic.CastSpell(ERSSpell.HIGH_LEVEL_ALCHEMY);
+        sleep (320,480);
+        Inventory.items.Click('Rune battleaxe', Emousebutton.LEFT);
+        Sleep(750, 850);
+      end;
+          If Inventory.items.find ('Runite bar',box) then
+      begin
+        magic.open;
+        Magic.CastSpell(ERSSpell.HIGH_LEVEL_ALCHEMY);
+        sleep (320,480);
+        Inventory.items.Click('Runite bar', Emousebutton.LEFT);
+        Sleep(750, 850);
+      end;
+
+end;
+//['Rune arrow-x','x-Rune scimitar','x-Fire battlestaff',X-'Rune 2h sword',x-'Rune battleaxe','x-Runite bar','Rune sq shield','Dragon med helm','Shield left half','Dragon spear'];
+
+function Filter():Tpoint;
+Var
+dots:Tpointarray;
+drop1:Tpoint;
+begin
+  dots:= (minimap.getDots(ERSMinimapDot.item).Sortfrom(Minimap.Center));
+  If minimap.getdots(ERSminimapdot.item) = [] Then
+    drop1:= [0,0];
+  begin
+     If minimap.getdots(ERSminimapdot.item) <> [] Then
+      drop1:=dots[0];
+  end;
+    begin
+      writeln (Minimap.Point2MS (drop1));
+      Result:= (Minimap.Point2MS (drop1));
+    end;
+end;
+
+Procedure Rscript.test;
+Var
+Doorspot:tpoint;
+begin
+doorspot:= [6160,10914];
+Map.Walker.webwalk (doorspot,0,0,true);
+//Map.Walker.webwalk (self.safespot2,0,0,true);
+  //Showontarget(self.mydrop);
+  //showontarget ([200,110,300,250]);
+
+end;
+
+Function Rscript.LootThePile2:Boolean;
+var
+  dots: TPointArray := Minimap.getDots(ERSMinimapDot.item).Sortfrom(Minimap.Center); // Go ahead and grab those dots when defining this variable in one single action
+begin
+  if dots.Length < 1 then Exit; // No dots found, make like a banana and split
+    self.MyDrop.Interact(['Take'],25);//clicks on mydrop entity picking up first item on pile
+
+    if Mainscreen.IsUpText(self.keeperslist, True, 0.65, 325) then // Bump this up to 250ms (still very fast)
+  begin
+    Result := True;
+    self.mydrop.hover(2);//hovers mydrop entity
+    Mouse.Click(EMouseButton.LEFT);//left clicks on mydrop entity pile
+    SleepUntil(Minimap.IsPlayerMoving(), 100, 1200);
+    SleepUntil(not Minimap.IsPlayerMoving(), 100, 4000);
+    begin
+      Mouse.click(mainscreen.center,EMouseButton.RIGHT);
+      sleep(600,800);
+      writeln ('Uptext: ', Mainscreen.UpText); // For debugging purposes, let's find out what the actual uptext was read as
+
+        if ChooseOption.Find(self.keeperslist) then
+          Result := ChooseOption.Select(self.takelist);
+          Sleep (1200,1800);
+        begin
+         Mouse.click(mainscreen.center,EMouseButton.RIGHT);
+         sleep(600,800);
+         writeln ('Uptext: ', Mainscreen.UpText); // For debugging purposes, let's find out what the actual uptext was read as
+
+          if ChooseOption.Find(self.keeperslist) then
+            Result := ChooseOption.Select(self.takelist);
+            Sleep (1200,1800);
+            Inventory.open;
+        end;
+    end;
+  end;
+end;
+
+
+
+
+Function Rscript.Getnextaction():TGiantStates;
+var
+Run:Rscript;
+Begin
+ If (Run.TargetCloseToDeath=True) then
+  Exit (Tgiantstates.WAITING_FOR_KILL);
+end;
+
+Procedure Rscript.Run;
+var
+  action: TGiantStates;
+  Begin
+    action:=self.Getnextaction;
+    WriteLn(action);
+        case action of
+      Tgiantstates.Waiting_for_kill: Self.WaitingForKill;
+  end;   //edartsstate.WITHDRAW_BARS: Self.OpenBankandWithdraw;
+  End;
+
+ //Final Program
+ Var
+  Script: Rscript;
+Begin
+
+  script.init;
+ //script.attacksetup;
+  //script.EngageTarget;
+  //script.Targetclosetodeath;
+  script.LootThePile2;
+  //script.BuryBones;
+  //script.ScanandAlch;
+
+end;
+
+
+
+
+
+
