@@ -285,7 +285,7 @@ var
     WriteLn(action);
         case action of
       Tgiantstates.Waiting_for_kill: Self.WaitingForKill;
-  end;   //edartsstate.WITHDRAW_BARS: Self.OpenBankandWithdraw;
+  end;   
   End;
 
  //Final Program
@@ -296,6 +296,7 @@ Begin
   script.init;
 
 end;
+
 
 
 
