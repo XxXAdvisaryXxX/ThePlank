@@ -92,10 +92,6 @@ Begin
   If Map.Walker.InRange(Self.SafeSpot2,10) then
     Map.Walker.webwalk (self.safespot2,0,0,true) Else
       Map.Walker.webwalk (Self.Safespot3,0,0,true);
-  begin
-    Sleepuntil ((minimap.isplayermoving=false),100,8000);
-  end;
-
 end;
 
 Procedure RScript.EngageTarget;
@@ -106,15 +102,10 @@ begin
  If Map.walker.inrange (self.SafeSpot2,10) Then
     self.ent2.Interact(['Attack'],25) Else
       self.ent1.Interact(['Attack'],25);
-    //If minimap.IsPlayerMoving(2) and hitsplat.find then
-
-begin
-    sleepuntil ((TRSHPBar.Find(bars)=true),500,4000);
-  end;
 end;
 
 Function Rscript.TargetCloseToDeath():Boolean;
-Var
+var
 bars:TRSHPbararray;
 bar:TRSHpbar;
 loc:tpoint;
@@ -303,14 +294,9 @@ var
 Begin
 
   script.init;
- //script.attacksetup;
-  //script.EngageTarget;
-  //script.Targetclosetodeath;
-  script.LootThePile2;
-  //script.BuryBones;
-  //script.ScanandAlch;
 
 end;
+
 
 
 
