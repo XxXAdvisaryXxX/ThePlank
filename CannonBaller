@@ -1,0 +1,94 @@
+{$I Wasplib/osrs.simba}
+ type
+  TCannonBallState = enum
+   (GETTING_BARS,
+    HANDLING_SCREEN,
+    FINDING_FURNACE,
+    WAITING_FOR_MATERIALS,
+    DEPOSITING
+   );
+
+    RScript = record
+      banklobby,furnacelobby: Tpoint;
+      furnace,bankbooth:TRSObject;
+      cannonball:TRSbankItem;
+    end;
+procedure Rscript.init;
+begin
+  Map.Setup([ERSChunk.EDGEVILLE]);
+
+  self.banklobby:= [8296,36454];
+  self.furnacelobby:=[8340,36434];
+
+  Self.furnace:= TRSObject.Create(@map.walker,[1,2,4],[[8344,36434]],['Smelt Furnace']);
+  Self.furnace.Track:= True;
+  Self.furnace.Finder.Colors += [$394E6C, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+
+  self.cannonball := new TRSBankItem('Cannonball', -1);
+end;
+
+function Rscript.GetBars:Boolean;
+begin
+  bank.open;
+  bank.SetQuantity(ERSItemQuantity.ALL);
+  bank.Withdraw('Steel bar',True,True);
+  bank.Close;
+  inventory.open;
+end;
+
+function Rscript.SmeltCB:Boolean;
+begin
+  Map.Walker.webwalk (self.furnacelobby,6,1,false);
+    sleep(400,650);
+  self.furnace.click (true,2);
+    sleepuntil ((make.isopen=True),400,5000);
+  Make.Select ('Cannonballs',28,-1);
+end;
+
+function Rscript.WaitingForMaterials:Boolean;
+begin
+  writeln 'waiting for cannonballs';
+  SleepUntil(not Inventory.Items.Contains('Steel bar'),1000,160000);
+  writeln 'cannonballs complete';
+end;
+
+function Rscript.DepositItems:Boolean;
+begin
+  Map.Walker.webwalk (self.banklobby,6,1,false);
+  bank.open;
+  bank.deposit (self.cannonball);
+end;
+
+Function Rscript.Getnextaction():TCannonBallState;
+begin
+  If not Inventory.Items.Contains('Steel bar') and Inventory.Items.Contains ('Cannonball') then
+    exit (Tcannonballstate.DEPOSITING);
+    If Inventory.isfull then
+      exit (Tcannonballstate.FINDING_FURNACE);
+      If xpbar.earnedxp then
+        exit (Tcannonballstate.WAITING_FOR_MATERIALS);
+        If make.isopen then
+          exit (Tcannonballstate.HANDLING_SCREEN);
+          If Inventory.Items.Contains ('Ammo mould') and not Inventory.Items.Contains('Steel bar') then
+            exit (Tcannonballstate.GETTING_BARS);
+end;
+
+Procedure Rscript.Run();
+var
+  action: Tcannonballstate;
+begin
+  action := Self.GetNextAction;
+    WriteLn(action);
+    case action of
+      Tcannonballstate.GETTING_BARS:Self.GetBars;
+      Tcannonballstate.FINDING_FURNACE:Self.SmeltCB;
+      Tcannonballstate.WAITING_FOR_MATERIALS:self.WaitingForMaterials;
+      Tcannonballstate.DEPOSITING:Self.DepositItems;
+    end;
+end;
+Var
+script: Rscript;
+begin
+  script.init;
+  script.run;
+end; 
