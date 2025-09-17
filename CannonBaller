@@ -53,7 +53,7 @@ begin
     sleepuntil ((make.isopen=True),400,5000);
   Make.Select ('Cannonballs',28,-1);
     writeln 'Sleeping For Program';
-    sleepuntil ((inventory.items.count ('Steel bar')<26),300,20000);
+      sleepuntil ((inventory.items.count ('Steel bar')<26),300,20000);
 end;
 
 function Tscript.WaitingForMaterials:Boolean;
