@@ -1,26 +1,27 @@
+```Pascal
 {$I Wasplib/osrs.simba}
 const
   MAX_RUNTIME_MINUTES = 120;
 
-type
+ type
   ECannonBallState = enum
-    (GETTING_BARS,
-     HANDLING_SCREEN,
-     FINDING_FURNACE,
-     WAITING_FOR_MATERIALS,
-     DEPOSITING
-    );
+   (GETTING_BARS,
+    HANDLING_SCREEN,
+    FINDING_FURNACE,
+    WAITING_FOR_MATERIALS,
+    DEPOSITING
+   );
 
-    TCannonBallForm = record
-   Form: TScriptForm;
-   MaxRuntimeEdit: TLazEdit;
- end;
+     TCannonBallForm = record
+    Form: TScriptForm;
+    MaxRuntimeEdit: TLazEdit;
+  end;
 
-   TScript = record
-     banklobby,furnacelobby: Tpoint;
-     furnace,bankbooth:TRSObject;
-     cannonball:TRSbankItem;
-   end;
+    TScript = record
+      banklobby,furnacelobby: Tpoint;
+      furnace,bankbooth:TRSObject;
+      cannonball:TRSbankItem;
+    end;
 procedure TScript.init;
 begin
   Map.Setup([ERSChunk.EDGEVILLE]);
@@ -33,6 +34,10 @@ begin
   Self.furnace.Finder.Colors += [$394E6C, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
 
   self.cannonball := new TRSBankItem('Cannonball', -1);
+
+  Antiban.Zoom.Min := 0;
+  Antiban.Zoom.Max := 30;
+  Antiban.Skills := [ERSSkill.SMITHING, ERSSkill.TOTAL];
 end;
 
 function TScript.GetBars:Boolean;
@@ -53,7 +58,7 @@ begin
     sleepuntil ((make.isopen=True),400,5000);
   Make.Select ('Cannonballs',28,-1);
     writeln 'Sleeping For Program';
-      sleepuntil ((inventory.items.count ('Steel bar')<26),300,20000);
+    sleepuntil ((inventory.items.count ('Steel bar')<26),300,20000);
 end;
 
 function Tscript.WaitingForMaterials:Boolean;
@@ -100,6 +105,7 @@ begin
       ECannonBallState.DEPOSITING:Self.DepositItems;
     end;
   end;
+ Antiban.DoAntiban();
 end;
 
 Var
@@ -108,3 +114,4 @@ begin
   script.init;
   script.run;
 end;
+```
