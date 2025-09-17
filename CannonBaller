@@ -3,7 +3,7 @@ const
   MAX_RUNTIME_MINUTES = 120;
 
  type
-  TCannonBallState = enum
+  ECannonBallState = enum
    (GETTING_BARS,
     HANDLING_SCREEN,
     FINDING_FURNACE,
@@ -11,12 +11,17 @@ const
     DEPOSITING
    );
 
-    RScript = record
+     TCannonBallForm = record
+    Form: TScriptForm;
+    MaxRuntimeEdit: TLazEdit;
+  end;
+
+    TScript = record
       banklobby,furnacelobby: Tpoint;
       furnace,bankbooth:TRSObject;
       cannonball:TRSbankItem;
     end;
-procedure RScript.init;
+procedure TScript.init;
 begin
   Map.Setup([ERSChunk.EDGEVILLE]);
 
@@ -30,7 +35,7 @@ begin
   self.cannonball := new TRSBankItem('Cannonball', -1);
 end;
 
-function RScript.GetBars:Boolean;
+function TScript.GetBars:Boolean;
 begin
   bank.open;
   bank.SetQuantity(ERSItemQuantity.ALL);
@@ -41,7 +46,7 @@ begin
   inventory.open;
 end;
 
-function RScript.SmeltCB:Boolean;
+function TScript.SmeltCB:Boolean;
 begin
   Map.Walker.webwalk (self.furnacelobby,0,0,false);
   self.furnace.click (true,2);
@@ -51,37 +56,37 @@ begin
     sleepuntil ((inventory.items.count ('Steel bar')<26),300,20000);
 end;
 
-function Rscript.WaitingForMaterials:Boolean;
+function Tscript.WaitingForMaterials:Boolean;
 begin
   writeln 'waiting for cannonballs';
   SleepUntil(not Inventory.Items.Contains('Steel bar'),1000,160000);
   writeln 'cannonballs complete';
 end;
 
-function Rscript.DepositItems:Boolean;
+function Tscript.DepositItems:Boolean;
 begin
   Map.Walker.webwalk (self.banklobby,0,0,false);
   bank.open;
   bank.deposit (self.cannonball);
 end;
 
-Function Rscript.Getnextaction():TCannonBallState;
+Function Tscript.Getnextaction():ECannonBallState;
 begin
   If not Inventory.Items.Contains('Steel bar') and Inventory.Items.Contains ('Cannonball') then
-    exit (Tcannonballstate.DEPOSITING);
+    exit (ECannonBallState.DEPOSITING);
     If Inventory.Items.Count('Steel bar')>25 then
-      exit (Tcannonballstate.FINDING_FURNACE);
+      exit (ECannonBallState.FINDING_FURNACE);
       If inventory.items.count ('Steel bar')>=1 then
-        exit (Tcannonballstate.WAITING_FOR_MATERIALS);
+        exit (ECannonBallState.WAITING_FOR_MATERIALS);
         If make.isopen then
-          exit (Tcannonballstate.HANDLING_SCREEN);
+          exit (ECannonBallState.HANDLING_SCREEN);
           If Inventory.Items.Contains ('Ammo mould') and not Inventory.Items.Contains('Steel bar') then
-            exit (Tcannonballstate.GETTING_BARS);
+            exit (ECannonBallState.GETTING_BARS);
 end;
 
-Procedure Rscript.Run();
+Procedure Tscript.Run();
 var
-  action: Tcannonballstate;
+  action: ECannonBallState;
 begin
  while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
 
@@ -89,16 +94,18 @@ begin
     action := Self.GetNextAction;
     WriteLn(action);
     case action of
-      Tcannonballstate.GETTING_BARS:Self.GetBars;
-      Tcannonballstate.FINDING_FURNACE:Self.SmeltCB;
-      Tcannonballstate.WAITING_FOR_MATERIALS:self.WaitingForMaterials;
-      Tcannonballstate.DEPOSITING:Self.DepositItems;
+      ECannonBallState.GETTING_BARS:Self.GetBars;
+      ECannonBallState.FINDING_FURNACE:Self.SmeltCB;
+      ECannonBallState.WAITING_FOR_MATERIALS:self.WaitingForMaterials;
+      ECannonBallState.DEPOSITING:Self.DepositItems;
     end;
   end;
 end;
+
 Var
-script: Rscript;
+script: Tscript;
 begin
   script.init;
   script.run;
-end; 
+end;
+     
