@@ -1,4 +1,7 @@
 {$I Wasplib/osrs.simba}
+const
+  MAX_RUNTIME_MINUTES = 120;
+
  type
   TCannonBallState = enum
    (GETTING_BARS,
@@ -13,7 +16,7 @@
       furnace,bankbooth:TRSObject;
       cannonball:TRSbankItem;
     end;
-procedure Rscript.init;
+procedure RScript.init;
 begin
   Map.Setup([ERSChunk.EDGEVILLE]);
 
@@ -27,22 +30,25 @@ begin
   self.cannonball := new TRSBankItem('Cannonball', -1);
 end;
 
-function Rscript.GetBars:Boolean;
+function RScript.GetBars:Boolean;
 begin
   bank.open;
   bank.SetQuantity(ERSItemQuantity.ALL);
   bank.Withdraw('Steel bar',True,True);
+    sleep (1200,1800);
   bank.Close;
+    sleep (600,1200);
   inventory.open;
 end;
 
-function Rscript.SmeltCB:Boolean;
+function RScript.SmeltCB:Boolean;
 begin
-  Map.Walker.webwalk (self.furnacelobby,6,1,false);
-    sleep(400,650);
+  Map.Walker.webwalk (self.furnacelobby,0,0,false);
   self.furnace.click (true,2);
     sleepuntil ((make.isopen=True),400,5000);
   Make.Select ('Cannonballs',28,-1);
+    writeln 'Sleeping For Program';
+    sleepuntil ((inventory.items.count ('Steel bar')<26),300,20000);
 end;
 
 function Rscript.WaitingForMaterials:Boolean;
@@ -54,7 +60,7 @@ end;
 
 function Rscript.DepositItems:Boolean;
 begin
-  Map.Walker.webwalk (self.banklobby,6,1,false);
+  Map.Walker.webwalk (self.banklobby,0,0,false);
   bank.open;
   bank.deposit (self.cannonball);
 end;
@@ -63,9 +69,9 @@ Function Rscript.Getnextaction():TCannonBallState;
 begin
   If not Inventory.Items.Contains('Steel bar') and Inventory.Items.Contains ('Cannonball') then
     exit (Tcannonballstate.DEPOSITING);
-    If Inventory.isfull then
+    If Inventory.Items.Count('Steel bar')>25 then
       exit (Tcannonballstate.FINDING_FURNACE);
-      If xpbar.earnedxp then
+      If inventory.items.count ('Steel bar')>=1 then
         exit (Tcannonballstate.WAITING_FOR_MATERIALS);
         If make.isopen then
           exit (Tcannonballstate.HANDLING_SCREEN);
@@ -77,7 +83,10 @@ Procedure Rscript.Run();
 var
   action: Tcannonballstate;
 begin
-  action := Self.GetNextAction;
+ while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
+
+  begin
+    action := Self.GetNextAction;
     WriteLn(action);
     case action of
       Tcannonballstate.GETTING_BARS:Self.GetBars;
@@ -85,10 +94,11 @@ begin
       Tcannonballstate.WAITING_FOR_MATERIALS:self.WaitingForMaterials;
       Tcannonballstate.DEPOSITING:Self.DepositItems;
     end;
+  end;
 end;
 Var
 script: Rscript;
 begin
   script.init;
   script.run;
-end;
+end; 
