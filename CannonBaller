@@ -1,3 +1,4 @@
+```pascal
 {$I Wasplib/osrs.simba}
 const
   MAX_RUNTIME_MINUTES = 120;
@@ -108,4 +109,5 @@ begin
   script.init;
   script.run;
 end;
+```
      
