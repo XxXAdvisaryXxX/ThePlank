@@ -1,6 +1,17 @@
+{*** CannonBall Smither***
+
+FOR BEST RESULTS:
+--Put Steel Bars in your main bank tab near the top left! (Should Find It From ANYWHERE, but be safe)
+--I Dont beleive in people using bank pin and passwords.. So open your bank if you have a pin.
+-- Edgeville Only
+--You can edit the max runtime in minutes below.
+
+
+Runs in Ed}
+
 {$I Wasplib/osrs.simba}
 const
-  MAX_RUNTIME_MINUTES = 360;
+  MAX_RUNTIME_MINUTES = 360; //Put Your Time Here.
 
  type
   ECannonBallState = enum
