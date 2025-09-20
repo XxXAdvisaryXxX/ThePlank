@@ -43,7 +43,6 @@ begin
   self.furnace.Finder.Colors += [$394E6C, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
 
   self.cannonball := new TRSBankItem('Cannonball', -1);
-  self.cannonball := new TRSBankItem('Ammo mould', 1);
 
   Antiban.Zoom.Min := 0;
   Antiban.Zoom.Max := 30;
