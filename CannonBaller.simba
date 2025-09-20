@@ -5,9 +5,7 @@ FOR BEST RESULTS:
 --I Dont beleive in people using bank pin and passwords.. So open your bank if you have a pin.
 -- Edgeville Only
 --You can edit the max runtime in minutes below.
-
-
-Runs in Ed}
+}
 
 {$I Wasplib/osrs.simba}
 const
