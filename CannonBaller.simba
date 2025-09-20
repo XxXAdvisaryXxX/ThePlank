@@ -9,7 +9,7 @@ FOR BEST RESULTS:
 
 {$I Wasplib/osrs.simba}
 const
-  MAX_RUNTIME_MINUTES = 360; //Put Your Time Here.
+  MAX_RUNTIME_MINUTES = 360; //Replace '360' with any minutes you want. 
 
  type
   ECannonBallState = enum
