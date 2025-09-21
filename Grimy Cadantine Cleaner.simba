@@ -1,0 +1,113 @@
+{**GRIMY CADANTINE CLEANER***
+
+For best results put grimy cadantine in the main bank tab
+near the top left.
+
+*****VERY IMPORTANT*** Keep Clean Herbs in a seperate bank tab
+
+Works in edgeville only. Cleans and deposits. NO GE SUPPORT
+
+IF you have bankpin; open bank first then start next to a bank booth in edgeville.
+}
+
+{$I Wasplib/osrs.simba}
+ const
+  MAX_RUNTIME_MINUTES = 360;
+
+ type
+  ECleanCadantine = enum
+   (WITHDRAWING_HERBS,
+    CLICKING_HERBS,
+    WAITING_FOR_CLEAN,
+    EMPTY_START
+   );
+
+    TScript = record
+      banklobby: Tpoint;
+      clean:TRSbankItem;
+      inv:TRSIteminterface;
+    end;
+
+procedure TScript.Init;
+begin
+  Map.Setup([ERSChunk.EDGEVILLE]);
+
+  self.banklobby:= [8296,36454];
+
+  self.clean := new TRSBankItem('Cadantine', -1);
+end;
+
+procedure TScript.Withdraw;
+begin
+  bank.open;
+  bank.SetQuantity(ERSItemQuantity.ALL);
+  bank.Withdraw('Grimy cadantine',True,True);
+    sleep (1200,1800);
+  bank.Close;
+    sleep (600,1200);
+  inventory.open;
+end;
+
+Procedure TScript.ClickHerbs;
+begin
+ inventory.items.Click ('Grimy cadantine', EMouseButton.LEFT);
+ sleepuntil((inventory.items.count ('Cadantine')>2),300,34000);
+end;
+
+Procedure TScript.Waiting;
+begin
+  writeln 'Sleeping While Cleaning';
+  sleepuntil ((inventory.items.count ('Cadantine')>26),300,34000);
+  writeln 'Herbs Clean';
+end;
+
+Procedure TScript.Deposit;
+var
+script:TScript;
+begin
+  bank.open;
+  bank.Deposit(self.clean,true);
+  script.Withdraw;
+end;
+
+function TScript.Getnextaction():ECleanCadantine;
+begin
+  If not Inventory.Items.Contains('Grimy cadantine') and not Inventory.Items.Contains ('Cadantine') then
+    exit (ECleanCadantine.EMPTY_START);
+    If Inventory.Items.Contains ('Cadantine') and Inventory.Items.Contains ('Grimy cadantine') then
+      exit (EcleanCadantine.WAITING_FOR_CLEAN);
+      If not inventory.Items.Contains ('Grimy cadantine') then
+        Exit (ECleanCadantine.WITHDRAWING_HERBS);
+        If inventory.items.count ('Grimy cadantine')>=27 then
+          Exit (ECleanCadantine.CLICKING_HERBS);
+end;
+
+procedure TScript.Run();
+var
+  action: ECleanCadantine;
+begin
+ while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
+
+  begin
+    action := Self.GetNextAction;
+    WriteLn(action);
+    case action of
+      ECleanCadantine.EMPTY_START:Self.Withdraw;
+      ECleanCadantine.CLICKING_HERBS:Self.ClickHerbs;
+      ECleanCadantine.WAITING_FOR_CLEAN: self.Waiting;
+      ECleanCadantine.WITHDRAWING_HERBS: self.Deposit;
+    end;
+  end;
+ Antiban.DoAntiban();
+end;
+
+
+
+Var
+script: TScript;
+begin
+  script.Init;
+  script.Run;
+end;
+
+
