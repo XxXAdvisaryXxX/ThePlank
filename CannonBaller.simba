@@ -9,7 +9,7 @@ FOR BEST RESULTS:
 
 {$I Wasplib/osrs.simba}
 const
-  MAX_RUNTIME_MINUTES = 360; //Replace '360' with any minutes you want. 
+  MAX_RUNTIME_MINUTES = 360;
 
  type
   ECannonBallState = enum
@@ -35,7 +35,7 @@ procedure TScript.init;
 begin
   Map.Setup([ERSChunk.EDGEVILLE]);
 
-  self.banklobby:= [8296,36454];
+  self.banklobby:= [8284,36446];
   self.furnacelobby:=[8340,36434];
 
   self.furnace:= TRSObject.Create(@map.walker,[1,2,4],[[8344,36434]],['Smelt Furnace']);
@@ -85,7 +85,7 @@ end;
 
 procedure TScript.DepositItems;
 begin
-  Map.Walker.webwalk (self.banklobby,0,0,false);
+  Map.Walker.walkblind (self.banklobby,0{,0,true});
   bank.open;
   bank.deposit (self.cannonball);
 end;
@@ -131,5 +131,5 @@ script: TScript;
 begin
   script.init;
   script.run;
-end;                              
+end;  
 
