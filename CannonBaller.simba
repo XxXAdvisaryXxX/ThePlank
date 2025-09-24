@@ -42,6 +42,10 @@ begin
   self.furnace.Track:= True;
   self.furnace.Finder.Colors += [$394E6C, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
 
+  self.bankbooth:= TRSObject.Create(@map.walker,[1,1,4],[[8296,36458]],['Bank Bank booth']);
+  self.bankbooth.Track:= True;
+  self.bankbooth.Finder.Colors += [$5F6264, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+
   self.cannonball := new TRSBankItem('Cannonball', -1);
 
   Antiban.Zoom.Min := 0;
@@ -51,13 +55,13 @@ end;
 
 procedure TScript.ItemCheck;
 begin
- bank.open;
+ bank.open (self.bankbooth);
  bank.withdraw('Ammo mould',True,True);
 end;
 
 procedure TScript.GetBars;
 begin
-  bank.open;
+  bank.open (self.bankbooth);
   bank.SetQuantity(ERSItemQuantity.ALL);
   bank.Withdraw('Steel bar',True,True);
     sleep (1200,1800);
@@ -85,8 +89,8 @@ end;
 
 procedure TScript.DepositItems;
 begin
-  Map.Walker.walkblind (self.banklobby,0{,0,true});
-  bank.open;
+  Map.Walker.webwalk (self.banklobby,0,0,false);
+  bank.open (self.bankbooth);
   bank.deposit (self.cannonball);
 end;
 
@@ -131,5 +135,6 @@ script: TScript;
 begin
   script.init;
   script.run;
-end;  
+end;
+    
 
