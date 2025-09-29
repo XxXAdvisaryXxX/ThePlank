@@ -1,0 +1,239 @@
+{$I Wasplib/osrs.simba}
+{
+    ***COAL MINER FOR MINING GUILD****
+
+    -Start Near The Mining Guild Bank
+    -Open Bank Chest First If PIN is active
+    -Banks all Ores, Minerals and Gems
+
+    ****OPTIONAL COAL BAG***
+    -If You Have Coal Bag, Make Sure It's In Your Inventory
+
+      *NOTE* SCRIPT WILL NOT EQUIP OR FIND PICKAXES
+}
+  const
+  MAX_RUNTIME_MINUTES = 360; //Controls how long the max runtime is
+
+  type
+  EMinerID = enum    //Enume Record For Script states
+   (MINING_PROCEDURE,
+    SHOULD_BANK_OR_FILL_BAG
+   );
+  ERockID = enum   //Enum Record for each rocks state
+   (R1_DEPLETED,
+    R2_DEPLETED,
+    R3_DEPLETED,
+    R1_OPEN,
+    R2_OPEN,
+    R3_OPEN
+   );
+
+
+    TRun = record  //record holding vars
+      bankpoint,rockpoint1,rockpoint2: Tpoint;
+      rock1,rock2,rock3,bankchest,depleted1,depleted2,depleted3:TRSObject;
+      ore:TRSbankItem;
+      bag,coal:TRSItem;
+    end;
+procedure TRun.Init;   //Loads all the needed items for script to function.
+begin
+  Map.Setup([ERSChunk.MINING_GUILD]);
+ //Item Info
+  self.bag:= 'Coal bag';
+  self.ore := new TRSBankItem('Coal', -1);
+  self.coal:='Coal';
+ //Coal Rock Info Below
+  self.rock1:= TRSObject.Create(@map.walker,[1,1,2],[[7980,11574]],['Mine Coal rocks']);
+  self.rock1.Track:= True;
+  self.rock1.Finder.Colors += [$162323, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+
+  self.rock2:= TRSObject.Create(@map.walker,[1,1,2],[[7976,11570]],['Mine Coal rocks']);
+  self.rock2.Track:= True;
+  self.rock2.Finder.Colors += [$162323, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+
+  self.rock3:= TRSObject.Create(@map.walker,[1,1,2],[[7980,11558]],['Mine Coal rocks']);
+  self.rock3.Track:= True;
+  self.rock3.Finder.Colors += [$162323, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+ //bankchest info
+  self.bankchest:= TRSObject.Create(@map.walker,[1,1,2],[[7952,11558]],['Use Bank chest']);
+  self.bankchest.Track:= True;
+ // self.bankchest.Finder.Colors += [$43566F, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+
+ //Depleted Rock Info below
+  self.depleted1:= TRSObject.Create(@map.walker,[1,1,2],[[7980,11574]],['Mine Rocks']);
+  self.depleted1.Track:= True;
+  self.depleted1.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+
+  self.depleted2:= TRSObject.Create(@map.walker,[1,1,2],[[7976,11570]],['Mine Rocks']);
+  self.depleted2.Track:= True;
+  self.depleted2.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+
+  self.depleted3:= TRSObject.Create(@map.walker,[1,1,2],[[7980,11558]],['Mine Rocks']);
+  self.depleted3.Track:= True;
+  self.depleted3.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+ //Walker Tpoints
+  self.rockpoint1:=[7980,11570];
+  self.rockpoint2:=[7980,11562];
+  self.bankpoint:=[7960,11558];
+//For Debugging
+  //showontarget (self.bankchest);
+end;
+
+function PercentPixelDiff(Area: TBox; WaitTime: Int32): Int32;   //writes pixel shift in %
+var
+  tLen,sLen: Int32;
+begin
+  tLen := TPointArray.CreateFromBox(Area, True).Length;
+  sLen := Target.GetPixelDifference(WaitTime, Area).Length;
+  Result := Round((sLen/tLen)*100);
+  writeln (Result);
+end;
+
+function TRun.IsMining:Boolean; //uses pixel diff to determine if player is in mining annamitation
+begin
+  If (PercentPixelDiff ((mainscreen.PlayerBox),500))>12 then
+    Result:=True else
+      Result:=False;
+end;
+
+procedure TRun.Click1;  //clicks rock 1... Use debugger in init to find.
+var
+run:TRun;
+begin
+  inventory.open;
+    writeln 'trying to click rock1';
+  self.rock1.click (true,1);
+    writeln 'Mining rock1';
+  sleepuntil ((run.IsMining=False),2000,30000);
+end;
+
+procedure TRun.Click2; //clicks rock 2... Use debugger in init to find.
+var
+run:TRun;
+begin
+  inventory.open;
+    writeln 'trying to click rock2';
+  self.rock2.click (true,1);
+    writeln 'Mining rock2';
+  sleepuntil ((run.IsMining=False),2000,30000);
+end;
+
+procedure TRun.Click3; //clicks rock 3... Use debugger in init to find.
+var
+run:TRun;
+begin
+  inventory.open;
+    writeln 'trying to click rock3';
+  self.rock3.click (true,1);
+    writeln 'Mining rock3';
+  sleepuntil ((run.IsMining=False),2000,30000);
+end;
+
+procedure TRun.FillBag; //fills coal bag
+begin
+  inventory.items.Interact (self.bag,'Fill Coal bag');
+end;
+
+procedure TRun.Deposit; //deposits all items in coal bag, coal, gems and minerals
+begin
+  map.walker.webwalk ((self.bankpoint),0,0.06,False);
+    sleepuntil ((Minimap.IsPlayerMoving=True),1200,3200);
+  bank.open(self.bankchest);
+    sleepuntil((bank.IsOpen),200,5000);
+  inventory.items.Interact ((self.coal),'Deposit-All Coal');
+  begin
+    if inventory.items.contains (self.bag) then
+      inventory.items.Interact ((self.bag),'Empty Coal bag');
+      if inventory.items.contains ('Unidentified minerals') then
+        inventory.items.Interact ('Unidentified minerals', 'Deposit-All Unidentified minerals');
+          if inventory.items.contains ('Uncut sapphire') then
+            inventory.items.Interact ('Uncut sapphire', 'Deposit-All Uncut sapphire');
+            if inventory.items.contains ('Uncut emerald') then
+              inventory.items.Interact ('Uncut emerald', 'Deposit-All Uncut emerald');
+              if inventory.items.contains ('Uncut ruby') then
+                inventory.items.Interact ('Uncut ruby', 'Deposit-All Uncut ruby');
+                if inventory.items.contains ('Uncut diamond') then
+                  inventory.items.Interact ('Uncut diamond', 'Deposit-All Uncut diamond');
+    bank.close;
+  end;
+end;
+
+function TRun.GetNextRock:ERockID; //Assigns whether rock is depleted or avaible
+Var
+coordinates: TPointArray;
+atpa: T2DPointArray;
+begin
+ If self.rock1.find(coordinates,atpa) then
+  exit (ERockID.R1_OPEN);
+  If self.rock2.find(coordinates,atpa) then
+    exit (ERockID.R2_OPEN);
+    If self.rock3.find(coordinates,atpa) then
+      exit (ERockID.R3_OPEN);
+      If self.depleted1.find(coordinates,atpa) then
+        exit (ERockID.R1_DEPLETED);
+        If self.depleted2.find(coordinates,atpa) then
+          exit (ERockID.R2_DEPLETED);
+          If self.depleted1.find(coordinates,atpa) then
+            exit (ERockID.R1_DEPLETED);
+end;
+
+procedure TRun.MineRocks;  //procedure used to mine the rocks.
+var
+  action: ERockID;
+begin
+  map.walker.webwalk ((self.rockpoint1),0,0.20,False);
+ while not inventory.isfull do
+
+  begin
+    action := Self.GetNextRock;
+    WriteLn(action);
+    case action of
+      ERockID.R1_OPEN: self.Click1;
+      ERockID.R1_DEPLETED: self.Click2;
+      ERockID.R2_DEPLETED: self.click3;
+      ERockID.R3_DEPLETED: self.Click1;
+      ERockID.R2_OPEN: self.Click2;
+      ERockID.R3_OPEN: self.Click3;
+    end;
+  end;
+end;
+
+procedure TRun.ShouldBankOrFillBag;  //Decides whether to fill coal bag and continue mining or bank and depesit.
+begin
+  If Inventory.Items.Count (self.coal)>24 then
+    self.fillbag;
+      sleep (600,750);
+    If inventory.items.count (self.coal)>=20 then
+      self.Deposit;
+end;
+
+function TRun.GetNextState: EMinerID; //assigns states outside of the actual mining process.
+begin
+  If not inventory.IsFull and (inventory.items.count (self.coal)<24) then
+    exit (EMinerID.MINING_PROCEDURE);
+    If inventory.items.count (self.coal)>=24 then
+      exit (EMinerID.SHOULD_BANK_OR_FILL_BAG);
+end;
+
+procedure TRun.Run;
+var
+  action: EMinerID;
+begin
+  while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
+
+  begin
+    action := Self.GetNextState;
+    WriteLn(action);
+    case action of
+      EMinerID.MINING_PROCEDURE: self.MineRocks;
+      EMinerID.SHOULD_BANK_OR_FILL_BAG: self.ShouldBankOrFillBag;
+    end;
+  end;
+end;
+
+var
+run:TRun;
+begin
+run.init;
+run.run;
+end;   
