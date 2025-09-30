@@ -5,6 +5,7 @@
     -Start Near The Mining Guild Bank
     -Open Bank Chest First If PIN is active
     -Banks all Ores, Minerals and Gems
+    -Supports Special Attack!
 
     ****OPTIONAL COAL BAG***
     -If You Have Coal Bag, Make Sure It's In Your Inventory
@@ -17,7 +18,8 @@
   type
   EMinerID = enum    //Enume Record For Script states
    (MINING_PROCEDURE,
-    SHOULD_BANK_OR_FILL_BAG
+    SHOULD_BANK_OR_FILL_BAG,
+    SHOULD_SPEC
    );
   ERockID = enum   //Enum Record for each rocks state
    (R1_DEPLETED,
@@ -135,6 +137,18 @@ begin
   sleep (425,1500);
 end;
 
+procedure TRun.Spec; //see's if spec is available
+begin
+ If Minimap.HasSpecialWeapon then
+  minimap.Toggle (ERSMinimapOrb.SPECIAL);
+end;
+
+procedure TRun.ShouldSpec;//engages spec
+begin
+  If Minimap.GetPercent(ERSMinimaporb.SPECIAL)=100 then
+    self.Spec;
+end;
+
 procedure TRun.Deposit; //deposits all items in coal bag, coal, gems and minerals
 begin
   map.walker.webwalk ((self.bankpoint),0,0.06,False);
@@ -207,10 +221,13 @@ end;
 
 function TRun.GetNextState: EMinerID; //assigns states outside of the actual mining process.
 begin
-  If not inventory.IsFull and (inventory.items.count (self.coal)<24) then
-    exit (EMinerID.MINING_PROCEDURE);
-    If inventory.items.count (self.coal)>=24 then
-      exit (EMinerID.SHOULD_BANK_OR_FILL_BAG);
+  If Minimap.HasSpecialWeapon=True then
+    exit (EMinerID.SHOULD_SPEC);
+    If not inventory.IsFull and (inventory.items.count (self.coal)<24) then
+      exit (EMinerID.MINING_PROCEDURE);
+      If inventory.items.count (self.coal)>=24 then
+        exit (EMinerID.SHOULD_BANK_OR_FILL_BAG);
+
 end;
 
 procedure TRun.Run;
@@ -225,6 +242,7 @@ begin
     case action of
       EMinerID.MINING_PROCEDURE: self.MineRocks;
       EMinerID.SHOULD_BANK_OR_FILL_BAG: self.ShouldBankOrFillBag;
+      EMinerID.SHOULD_SPEC:self.ShouldSpec;
     end;
   end;
 end;
@@ -234,4 +252,4 @@ run:TRun;
 begin
 run.init;
 run.run;
-end;
+end;                                              
