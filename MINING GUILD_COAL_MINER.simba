@@ -139,7 +139,7 @@ end;
 
 procedure TRun.Spec; //see's if spec is available
 begin
- If Minimap.HasSpecialWeapon then
+ If Minimap.HasSpecial then
   minimap.Toggle (ERSMinimapOrb.SPECIAL);
 end;
 
@@ -161,7 +161,7 @@ end;
 
 procedure TRun.Deposit; //deposits all items in coal bag, coal, gems and minerals
 begin
-  map.walker.webwalk ((self.bankpoint),0,0.06,False);
+  map.walker.walkblind ((self.bankpoint),0);
     sleepuntil ((Minimap.IsPlayerMoving=True),1200,3200);
   bank.open(self.bankchest);
     sleepuntil((bank.IsOpen),200,5000);
@@ -203,9 +203,9 @@ procedure TRun.MineRocks;  //procedure used to mine the rocks.
 var
   action: ERockID;
 begin
-  map.walker.webwalk ((self.rockpoint1),0,0.20,False);
+  map.walker.walkblind ((self.rockpoint1),0);
   begin
-    If Minimap.HasSpecialWeapon=True and Self.Spec100=True then
+    If Minimap.HasSpecial=True and Self.Spec100=True then
       self.ShouldSpec;
   end;
  while not inventory.isfull do
@@ -263,4 +263,4 @@ run:TRun;
 begin
 run.init;
 run.run;
-end;                                                           
+end;                                                                           
