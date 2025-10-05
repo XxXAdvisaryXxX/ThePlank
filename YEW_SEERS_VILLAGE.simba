@@ -1,0 +1,234 @@
+{$I Wasplib/osrs.simba}
+const
+  MAX_RUNTIME_MINUTES = 360; //Controls how long the max runtime is
+
+  type
+  EYewChopper = enum    //Enume Record For Script states
+   (CHOPPING_PROCEDURE,
+    SHOULD_BANK
+   );
+
+  EYewTreeID = enum   //Enum Record for each rocks state
+   (T1_DEPLETED,
+    T2_DEPLETED,
+    T3_DEPLETED,
+    T1_OPEN,
+    T2_OPEN,
+    T3_OPEN
+   );
+
+
+    TRun = record  //record holding vars
+      bankpoint,yew1point,yew2point,yew3point: Tpoint;
+      yew1,yew2,yew3,bankchest,depleted1,depleted2,depleted3,nest:TRSObject;
+      yewlog:TRSItem;
+    end;
+
+procedure TRun.Init;   //Loads all the needed items for script to function.
+begin
+   Map.Setup([Chunk(Box(41,55,43,53), 0)]);
+   //Map.Debug();
+
+   self.yewlog:='Yew logs';
+
+   self.yew1:= TRSObject.Create(@map.walker,[2,2,14],[[6764,36590]],['Chop down Yew tree']);
+   self.yew1.Track:= True;
+   self.yew1.Finder.Colors += [$2D4D49, 2, EColorSpace.HSL, [1.000, 1.000, 1.000]];
+
+   self.yew2:= TRSObject.Create(@map.walker,[2,2,14],[[6728,36590]],['Chop down Yew tree']);
+   self.yew2.Track:= True;
+   self.yew2.Finder.Colors += [$2D4D49, 2, EColorSpace.HSL, [1.000, 1.000, 1.000]];
+
+   self.yew3:= TRSObject.Create(@map.walker,[2,2,14],[[6728,36574]],['Chop down Yew tree']);
+   self.yew3.Track:= True;
+   self.yew3.Finder.Colors += [$2D4D49, 2, EColorSpace.HSL, [1.000, 1.000, 1.000]];
+ /////////
+  self.depleted1:= TRSObject.Create(@map.walker,[2,2,3],[[6764,36590]],['Walk here / 1 more option']);
+  self.depleted1.Track:= True;
+  self.depleted1.Finder.Colors +=[$49778D,1, EColorSpace.HSL, [1.000, 1.000, 1.000]];
+
+  self.depleted2:= TRSObject.Create(@map.walker,[2,2,3],[[6728,36590]],['Walk here / 1 more option']);
+  self.depleted2.Track:= True;
+  self.depleted2.Finder.Colors +=[$49778D,1, EColorSpace.HSL, [1.000, 1.000, 1.000]];
+
+  self.depleted3:= TRSObject.Create(@map.walker,[2,2,3],[[6728,36574]],['Walk here / 1 more option']);
+  self.depleted3.Track:= True;
+  self.depleted3.Finder.Colors +=[$49778D,1, EColorSpace.HSL, [1.000, 1.000, 1.000]];
+ //////
+   self.bankpoint:=[6808,36462];
+   self.yew1point:=[6764,36582];
+   self.yew2point:=[6728,36582];
+   self.yew3point:=[6728,36578];
+
+   //For Debugging
+  //showontarget (self.depleted2);
+
+end;
+procedure TRun.Spec; //see's if spec is available
+begin
+ If Minimap.HasSpecial then
+  minimap.Toggle (ERSMinimapOrb.SPECIAL);
+end;
+
+procedure TRun.ShouldSpec;//engages spec
+begin
+  If Minimap.GetPercent(ERSMinimaporb.SPECIAL)=100 then
+    self.Spec;
+    sleepuntil ((Minimap.GetPercent(ERSMinimaporb.SPECIAL)=0),200,2000);
+end;
+
+function TRun.Spec100: Boolean;
+begin
+  If Minimap.GetPercent(ERSMinimaporb.SPECIAL)=100 then
+    Result:=True Else
+      Result:= False;
+  Exit;
+end;
+
+procedure TRun.deposit;
+begin
+  map.walker.webwalk((self.bankpoint),0,0.20);
+  bank.open;
+  bank.DepositInventory;
+  bank.Close;
+end;
+
+procedure TRun.TreePatch;
+begin
+  map.walker.webwalk((self.yew1point),0,0.20);
+end;
+
+
+function PercentPixelDiff(Area: TBox; WaitTime: Int32): Int32;   //writes pixel shift in %
+var
+  tLen,sLen: Int32;
+begin
+  tLen := TPointArray.CreateFromBox(Area, True).Length;
+  sLen := Target.GetPixelDifference(WaitTime, Area).Length;
+  Result := Round((sLen/tLen)*100);
+  writeln (Result);
+end;
+
+function TRun.IsChopping:Boolean; //uses pixel diff to determine if player is in mining annamitation
+begin
+  If (PercentPixelDiff ((mainscreen.PlayerBox),500))>12 then
+    Result:=True else
+      Result:=False;
+end;
+
+procedure TRun.ClickTreeOne;
+var
+run:TRun;
+begin
+  map.walker.webwalk((self.yew1point),0,0.10);
+  inventory.open;
+    Writeln 'Trying To Chop Tree 1';
+  self.yew1.Click (true,1);
+  sleepuntil ((Minimap.IsPlayerMoving=False),1200,3200);
+    writeln 'Chopping Tree 1';
+  sleepuntil ((run.IsChopping=False),2000,240000);
+    Writeln 'Resetting State';
+end;
+
+procedure TRun.ClickTreeTwo;
+var
+run:TRun;
+begin
+  map.walker.webwalk((self.yew2point),0,0.10);
+  inventory.open;
+    Writeln 'Trying To Chop Tree 2';
+  self.yew2.Click (true,1);
+  sleepuntil ((Minimap.IsPlayerMoving=False),1200,3200);
+    writeln 'Chopping Tree 2';
+  sleepuntil ((run.IsChopping=False),2000,240000);
+    Writeln 'Resetting State';
+end;
+
+procedure TRun.ClickTreeThree;
+var
+run:TRun;
+begin
+  map.walker.webwalk((self.yew3point),0,0.10);
+  inventory.open;
+    Writeln 'Trying To Chop Tree 3';
+  self.yew3.Click (true,1);
+  sleepuntil ((Minimap.IsPlayerMoving=False),1200,3200);
+    writeln 'Chopping Tree 3';
+  sleepuntil ((run.IsChopping=False),2000,240000);
+    Writeln 'Resetting State';
+end;
+
+function TRun.GetNextTree:EYewTreeID; //Assigns whether rock is depleted or avaible
+Var
+coordinates: TPointArray;
+atpa: T2DPointArray;
+begin
+ If self.yew1.find(coordinates,atpa) then
+  exit (EYewTreeID.T1_OPEN);
+  If self.yew2.find(coordinates,atpa) then
+    exit (EYewTreeID.T2_OPEN);
+    If self.yew3.find(coordinates,atpa) then
+      exit (EYewTreeID.T3_OPEN);
+     If self.depleted1.find(coordinates,atpa) then
+         exit (EYewTreeID.T1_DEPLETED);
+        If self.depleted2.find(coordinates,atpa) then
+          exit (EYewTreeID.T2_DEPLETED);
+          If self.depleted3.find(coordinates,atpa) then
+            exit (EYewTreeID.T3_DEPLETED);
+end;
+
+procedure TRun.ChopTrees;  //procedure used to mine the rocks.
+var
+  action: EYewTreeID;
+begin
+  map.walker.walkblind ((self.yew1point),0);
+  begin
+    If Minimap.HasSpecial=True and Self.Spec100=True then
+      self.ShouldSpec;
+  end;
+ while not inventory.isfull do
+
+  begin
+    action := Self.GetNextTree;
+    WriteLn(action);
+    case action of
+      EYewTreeID.T1_OPEN: self.ClickTreeOne;
+      EYewTreeID.T2_OPEN: self.ClickTreeTwo;
+      EYewTreeID.T3_OPEN: self.ClickTreeThree;
+      EYewTreeID.T1_DEPLETED: self.ClickTreeTwo;
+      EYewTreeID.T2_DEPLETED: self.ClickTreeThree;
+      EYewTreeID.T3_DEPLETED: self.ClickTreeOne;
+    end;
+  end;
+end;
+
+function TRun.GetNextState: EYewChopper; //assigns states outside of the actual mining process.
+begin
+    If not inventory.IsFull and (inventory.items.count (self.yewlog)<=26) then
+     exit (EYewChopper.CHOPPING_PROCEDURE);
+      If inventory.items.count (self.yewlog)>=27 then
+        exit (EYewChopper.SHOULD_BANK);
+end;
+
+procedure TRun.Run;
+var
+  action: EYewChopper;
+begin
+  while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
+
+  begin
+    action := Self.GetNextState;
+    WriteLn(action);
+    case action of
+      EYewChopper.CHOPPING_PROCEDURE: self.ChopTrees;
+      EYewChopper.SHOULD_BANK: self.deposit;
+    end;
+  end;
+end;
+
+var
+run: TRun;
+begin
+ run.init;
+ run.Run;
+end;
