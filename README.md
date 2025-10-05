@@ -2,9 +2,8 @@ Place For My OSRS Bots.
 
 -My bots will never ask for bank pins, passwords or account info. 
 
--My bots will never have GUI's either. Just follow instructions written within the script.
+- Follow instructions written within the scrit until GUI's are added.
 
--If people repurpose my code; please just give me some credit.
 
 
 
