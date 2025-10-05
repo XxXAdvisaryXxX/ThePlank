@@ -1,4 +1,13 @@
 {$I Wasplib/osrs.simba}
+{
+*****SEERS VILLAGE YEW CHOPPER V1.0*****
+
+***Supports Special Attacks
+***Start Anywhere Near Seers Village*
+***Open Bank First If You Have PIN
+***Working on adding Forrestry Events and Bird Nest
+***Banks At Seers Village - NO DROPPING
+}
 const
   MAX_RUNTIME_MINUTES = 360; //Controls how long the max runtime is
 
@@ -148,7 +157,7 @@ procedure TRun.ClickTreeThree;
 var
 run:TRun;
 begin
-  map.walker.webwalk((self.yew3point),0,0.10);
+  map.walker.webwalk((self.yew3point),0,0.60);
   inventory.open;
     Writeln 'Trying To Chop Tree 3';
   self.yew3.Click (true,1);
@@ -181,7 +190,7 @@ procedure TRun.ChopTrees;  //procedure used to mine the rocks.
 var
   action: EYewTreeID;
 begin
-  map.walker.walkblind ((self.yew1point),0);
+  map.walker.webwalk((self.yew1point),0,0.60);
   begin
     If Minimap.HasSpecial=True and Self.Spec100=True then
       self.ShouldSpec;
@@ -204,9 +213,9 @@ end;
 
 function TRun.GetNextState: EYewChopper; //assigns states outside of the actual mining process.
 begin
-    If not inventory.IsFull and (inventory.items.count (self.yewlog)<=26) then
+    If not inventory.IsFull and (inventory.items.count (self.yewlog)<=25) then
      exit (EYewChopper.CHOPPING_PROCEDURE);
-      If inventory.items.count (self.yewlog)>=27 then
+      If inventory.items.count (self.yewlog)>=26 then
         exit (EYewChopper.SHOULD_BANK);
 end;
 
