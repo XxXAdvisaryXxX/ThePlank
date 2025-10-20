@@ -1,0 +1,648 @@
+{
+**** DO NOT TRY TO RUN ** WILL ERROR OUT ** BE READY SOON!!
+}
+{$I Wasplib/osrs.simba}
+const
+  MAX_RUNTIME_MINUTES = 360; //Controls how long the max runtime is
+
+  type
+  EGameStates = enum    //Enume Record For Script states
+   (INGAME,
+    GAME_ENDED,
+    WAITING_IN_BOAT
+   );
+
+   EBoats = enum //ENUm record for lander boats
+   (NOVICE,
+    INTERMEDIATE,
+    EXPERT
+   );
+
+    EKillStates = enum //ENUm record for lander boats
+   (KILL_BRAWLER,
+    KILL_TORCHER,
+    KILL_DEFILER,
+    KILL_SPINNER,
+    KILL_RAVENGER,
+    KILL_SPLATTER
+   );
+
+   EPortalStates = enum //
+    ( //open variants
+     EAST_OPEN,
+     WEST_OPEN,
+     SOUTHEAST_OPEN,
+     SOUTHWEST_OPEN,
+     NO_PORTALS
+    );
+
+    EAttackStates =enum //
+     (ATTACK_WEST,
+      ATTACK_EAST,
+      ATTACK_SOUTHWEST,
+      ATTACK_SOUTHEAST,
+      ATTACK_MONSTERS
+     );
+
+    TPest = record  //record holding vars
+      boat1,boat2,boat3, westpoint, eastpoint, southwestpoint, southeastpoint,SELadderPoint,NELadderPoint,MonsterSearchPoint:TPoint;
+      boat1plank,boat2plank,boat3plank,westob,eastob,southwestob,southeastob,SETowerLadder,SWTowerLadder:TRSObject;
+      Ravengers,Spinners,Torchers,Defilers,Brawlers,Splatters,Shifters:TRSEntity;
+      Monsters:TRSEntityArray;
+      Finder: TColorFinder;
+      portgreen,boatgreen,boatorange,checkgreen: TColor;
+      ATPA: T2DPointArray;
+      CombatLevelCheck:TRSAchievementsSummary;
+      timer:tcountdown;
+      CuBoidArray:TCuboidArray;
+      Coordinates:TPointArray;
+
+      Overlay:record //record for overlay tracking
+        eastbox,westbox,swbox,sebox,gameover,inboattext,gamestart: TBox;
+        boxarray: Array of Tbox;
+        Finder,startgame,endgame: TColorFinder;
+      end;
+
+      WalkerPaths:record
+        eastpath,westpath,northpath: Array of TPoint;
+        platform:TPoint;
+      end;
+
+      GateLocations:record
+        south,east,west:Tpoint;
+      end;
+    end;
+
+procedure TPest.Init;
+begin
+  Map.Setup([Chunk(Box(41,41,41,41), 0)]); //pc boat area
+  Map.Add([Chunk(Box(41,40,41,40), 0)]); //pc game area
+
+  //*** Boat TPoints and Planks
+  self.boat2:= [6480,39854]; //INTERMEDIATE BOAT
+  self.boat2plank:= TRSObject.Create(@map.walker,[2,1,1],[[6476,39854]],['Cross Gangplank']);
+
+  self.boat3:=[6456,39818];
+  self.boat3plank:= TRSObject.Create(@map.walker,[2,1,1],[[6452,39818]],['Cross Gangplank']);
+
+  self.boat1:=[6532,39874];
+  self.boat1plank:= TRSObject.Create(@map.walker,[2,1,1],[[6536,39874]],['Cross Gangplank']);
+  //****Tower TPoint and Object Creation
+  self.SELadderPoint:= [6568,40082];
+  self.SETowerLadder:= TRSObject.Create(@map.walker,[1,1,10],[[6567,40086]],['Climb Ladder']);
+
+  //***Portal Attack TPoints and Void Knight Platform
+  self.southwestpoint:= [6488,40142];
+  self.westpoint:= [6432,40062];
+  self.eastpoint:= [6620,40074];
+  self.southeastpoint:= [6584,40134];
+  self.walkerpaths.platform:= [6528, 40054];//Void Knight Plateform
+  self.MonsterSearchPoint:=[6568,40130];
+
+  //***Portal Object Creation
+  self.eastob:= TRSObject.Create(@map.walker,[2,2,10],[[6884,39498]],['Attack Portal']);
+  self.eastob.Finder.Colors += [$9A8F89, 1, EColorSpace.HSL, [0.206, 1.013, 1.783]];
+
+  self.westob:= TRSObject.Create(@map.walker,[2,2,10],[[6420,40062]],['Attack Portal']);
+  self.westob.Finder.Colors += [$CEC8CD, 1, EColorSpace.HSL, [1, 3, 1.000]];
+  //****  OVERLAY TBoxes and Colors
+  self.overlay.westbox:= [366,48,397,104];
+  self.overlay.eastbox:=[402,48,437,104];
+  self.overlay.sebox:=[439,48,475,104];
+  self.overlay.swbox:=[478,48,512,104];
+
+  self.overlay.gameover:= [227,440,379,460];
+  self.overlay.gamestart:= chat.bounds;
+  self.overlay.inboattext:= mainscreen.bounds;
+
+  self.overlay.boxarray:= [self.Overlay.eastbox,self.overlay.westbox,self.overlay.sebox,self.overlay.swbox];
+
+  self.portgreen:= $00F800;
+  self.boatorange:=$3D81FF;
+  self.boatgreen:= $31D259;
+  self.checkgreen:=$0DC10D;
+ //**Gate Information
+  self.GateLocations.east:= [6580,40058];
+  self.GateLocations.south:=[6528,40086];
+  self.GateLocations.west:=[6480, 40058];
+
+  //**Walker Paths
+  self.walkerpaths.eastpath:= [self.GateLocations.east, self.eastpoint];
+  self.walkerpaths.westpath:= [self.walkerpaths.platform, self.GateLocations.west, self.westpoint];
+  //Colorstuff For Overlay
+  self.overlay.finder.colors += [$6B6B72, 0, EColorSpace.HSL, [0, 1, 0]];
+  self.overlay.endgame.Colors+= [$FF0000, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.overlay.startgame.colors+= [$275061, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+
+  self.combatlevelcheck.CombatLevel:=[551,249,640,290];
+
+  //Monster Loading
+  self.Spinners:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Spinner'],[ERSMinimapDot.NPC]);
+  self.Spinners.Finder.Colors += [$878B91, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  Self.Spinners.Track:=True;
+
+  self.Defilers:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Defiler'],[ERSMinimapDot.NPC]);
+  self.Defilers.Finder.Colors += [$6E81B1, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Defilers.Finder.Colors +=[$5A6A91, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  Self.Defilers.Track:=True;
+
+  self.Torchers:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Torcher'],[ERSMinimapDot.NPC]);
+  self.Torchers.Finder.Colors += [$535000, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  Self.Torchers.Track:=True;
+
+  self.Brawlers:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Brawler'],[ERSMinimapDot.NPC]);
+  self.Brawlers.Finder.Colors += [$86A3B9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Brawlers.Finder.Colors += [$73B9AF, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Brawlers.Finder.Colors +=[$B59671, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  Self.Brawlers.Track:=True;
+
+  self.Splatters:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Splatter'],[ERSMinimapDot.NPC]);
+  self.Splatters.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Splatters.Finder.Colors +=[$5D6884, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Splatters.Finder.Colors += [$B48FCA, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  Self.Splatters.Track:=True;
+
+  self.Shifters:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Shifter'],[ERSMinimapDot.NPC]);
+  self.Shifters.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  Self.Shifters.Track:=True;
+
+  self.Ravengers:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Shifter'],[ERSMinimapDot.NPC]);
+  self.Ravengers.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  Self.Ravengers.Track:=True;
+     //debug
+ showontarget (self.torchers);
+end;
+function TPest.PercentPixelDiff(Area: TBox; WaitTime: Int32): Int32;   //writes pixel shift in %
+var
+  tLen,sLen: Int32;
+begin
+  tLen := TPointArray.CreateFromBox(Area, True).Length;
+  sLen := Target.GetPixelDifference(WaitTime, Area).Length;
+  Result := Round((sLen/tLen)*100);
+  writeln (Result);
+end;
+
+function TPest.IsShootingArrows:Boolean; //uses pixel diff to determine if player is in mining annamitation
+begin
+  If (self.PercentPixelDiff ((mainscreen.PlayerBox),500))>12 then
+    Result:=True else
+      Result:=False;
+end;
+
+procedure TPest.WaitingOnPortal;
+begin
+  writeln 'Waiting For Portal To Open';
+  map.walker.webwalk(self.walkerpaths.platform,4,0,false);
+end;
+
+procedure TPest.AttackTorcher;
+begin
+  if not self.Torchers.find(self.Coordinates,self.ATPA) then
+  exit;
+  begin
+  Self.Torchers.Click (True,5);
+  //sleepuntil((self.IsShootingArrows=False),2000,15000);
+  sleep (800,1350);
+  end;
+end;
+
+procedure TPest.AttackDefiler;
+begin
+  if not self.Defilers.find(self.Coordinates,self.ATPA) then
+  exit;
+  begin
+  Self.Defilers.Click (True,5);
+  //sleepuntil((self.IsShootingArrows=False),2000,15000);
+  sleep (800,1350);
+  end;
+end;
+
+procedure TPest.AttackBrawler;
+begin
+  if not self.Brawlers.find(self.Coordinates,self.atpa) then
+  exit;
+  begin
+  Self.Brawlers.click (True,5);
+  //sleepuntil((self.IsShootingArrows=False),2000,15000);
+  sleep (800,1350);
+  end;
+end;
+
+procedure TPest.AttackSplatter;
+begin
+  if not self.Splatters.find(self.Coordinates,self.ATPA) then
+  exit;
+  begin
+  Self.Splatters.Click (True,5);
+  //sleepuntil((self.IsShootingArrows=False),2000,15000);
+  sleep (800,1350);
+  end;
+end;
+
+procedure TPest.AttackRavenger;
+begin
+  if not self.Ravengers.find(self.Coordinates,self.atpa) then
+  exit;
+  begin
+  Self.Ravengers.click (True,5);
+  //sleepuntil((self.IsShootingArrows=False),2000,15000);
+  sleep (800,1350);
+  end;
+end;
+
+procedure TPest.AttackShifter;
+begin
+  if not self.Shifters.find(self.Coordinates,self.atpa) then
+  exit;
+  begin
+  Self.Shifters.click (True,5);
+  //sleepuntil((self.IsShootingArrows=False),2000,15000);
+  sleep (800,1350);
+  end;
+end;
+
+function TPest.FindCombatLevel:Int32;
+begin
+  Achievements.Open;
+  Result := OCR.RecognizeNumber(self.combatlevelcheck.CombatLevel, RSFonts.PLAIN_11, [self.checkgreen], 5);
+end;
+
+function TPest.InboatWaiting:Boolean;
+begin
+  If OCR.RecognizeNumber(Self.overlay.inboattext , RSFonts.PLAIN_12, [self.boatorange], 5)>=1 then
+    result:=true else
+  false;
+  begin
+    If OCR.RecognizeNumber(Self.overlay.inboattext , RSFonts.PLAIN_12, [self.boatgreen], 5)>=1 then
+      result:=true else
+    false;
+    exit;
+  end;
+end;
+
+procedure TPest.WaitingState;
+begin
+  If self.inboatwaiting then
+  sleepuntil((self.inboatwaiting=false),200,30000);
+end;
+
+function TPest.OnBattlefield: Boolean;
+begin
+  If map.walker.inrange(self.walkerpaths.platform,125) then
+  result:=True;
+end;
+
+function TPest.OnMainIsland: Boolean;
+begin
+  If map.walker.inrange(self.boat2,125) then
+  result:=True;
+end;
+procedure TPest.BoardIntermediateBoat;
+begin
+  {DEBUG}writeln 'Walking TO Boat 2';
+  map.walker.webwalk(self.boat2,4,0,false);
+
+  {DEBUG}writeln 'Made To Destination.. Boarding Boat';
+  self.boat2plank.click (True,2);
+  sleepuntil((self.InboatWaiting=True),200,6000);
+
+  {DEBUG}writeln 'Waiting FOR Game';
+end;
+
+procedure TPest.BoardExpertBoat;
+begin
+  {DEBUG}writeln 'Walking Expert Boat';
+  map.walker.webwalk(self.boat3,4,0,false);
+
+  {DEBUG}writeln 'Made To Destination.. Boarding Boat';
+  self.boat3plank.click (True,2);
+
+
+  {DEBUG}writeln 'Waiting FOR Game';
+end;
+
+procedure TPest.BoardNoobBoat;
+begin
+  {DEBUG}writeln 'Walking NOOB Boat';
+  map.walker.webwalk(self.boat1,4,0,false);
+
+  {DEBUG}writeln 'Made To Destination.. Boarding Boat';
+  self.boat1plank.click (True,2);
+
+
+  {DEBUG}writeln 'Waiting FOR Game';
+end;
+
+procedure TPest.WalkWestPortal;
+begin
+  writeln 'Walking to West Gate';
+  //map.walker.webwalk(self.gatelocations.west,4,0,false);
+
+  writeln 'walking to West Portal';
+  map.walker.webwalk(self.westpoint,4,0,false);
+
+  showontarget (self.westob);
+end;
+
+procedure TPest.WalkEastPortal;
+begin
+    writeln 'Walking to East Gate';
+  //map.walker.webwalk(self.gatelocations.east,4,0,false);
+    writeln 'walking to East Portal';
+  map.walker.webwalk(self.eastpoint,4,0,false);
+  showontarget (self.eastob);
+end;
+
+procedure TPest.AttackWestPortal;
+begin
+  self.WalkWestPortal;
+  writeln 'Finding West Portal';
+  sleepuntil ((minimap.IsPlayerMoving=False),1200,5200);
+  Writeln 'Trying To Attack To West Portal';
+  self.westob.Click(True,2);
+end;
+
+procedure TPest.AttackEastPortal;
+ begin
+  self.WalkEastPortal;
+  writeln 'Finding West Portal';
+  sleepuntil ((minimap.IsPlayerMoving=False),1200,5200);
+  Writeln 'Trying To Attack To West Portal';
+  self.eastob.Click(True,2);
+end;
+
+function TPest.IsWestPortalOpen:Boolean;
+var
+ATPA: T2DPointArray;
+begin
+  If self.overlay.finder.find(ATPA,[self.overlay.westbox]) then
+  Result:= False;
+     If not self.overlay.finder.find(ATPA,[self.overlay.westbox]) then
+     Result:= True;
+end;
+
+function TPest.IsEastPortalOpen:Boolean;
+var
+ATPA: T2DPointArray;
+begin
+  If self.overlay.finder.find(ATPA,[self.overlay.eastbox]) then
+  Result:= False;
+     If not self.overlay.finder.find(ATPA,[self.overlay.eastbox]) then
+     Result:= True;
+end;
+
+function TPest.IsSouthWestPortalOpen:Boolean;
+var
+ATPA: T2DPointArray;
+begin
+  If self.overlay.finder.find(ATPA,[self.overlay.swbox]) then
+  Result:= False;
+     If not self.overlay.finder.find(ATPA,[self.overlay.swbox]) then
+     Result:= True;
+end;
+
+function TPest.IsSouthEastPortalOpen:Boolean;
+var
+ATPA: T2DPointArray;
+begin
+  If self.overlay.finder.find(ATPA,[self.overlay.sebox]) then
+  Result:= False;
+     If not self.overlay.finder.find(ATPA,[self.overlay.sebox]) then
+     Result:= True;
+end;
+
+function TPest.CheckWestPortalHealth:Int32;
+begin
+  Result := OCR.RecognizeNumber(Self.overlay.westbox, RSFonts.PLAIN_11, [self.portgreen], 5);
+end;
+
+function TPest.CheckEastPortalHealth:Int32;
+begin
+  Result := OCR.RecognizeNumber(Self.overlay.eastbox, RSFonts.PLAIN_11, [self.portgreen], 5);
+end;
+
+function TPest.CheckSouthWestPortalHealth:Int32;
+begin
+  Result := OCR.RecognizeNumber(Self.overlay.swbox, RSFonts.PLAIN_11, [self.portgreen], 5);
+end;
+
+function TPest.CheckSouthEastPortalHealth:Int32;
+begin
+  Result := OCR.RecognizeNumber(Self.overlay.sebox, RSFonts.PLAIN_11, [self.portgreen], 5);
+end;
+
+function TPest.DidGameStart: Boolean;
+begin
+ If self.overlay.startgame.find(self.ATPA,[self.overlay.gamestart]) and
+  map.walker.inrange([6536,40010],40) then
+ Result:= True;
+end;
+
+function TPest.DidGameEnd: Boolean;
+begin
+  If self.overlay.endgame.find(self.ATPA,[self.overlay.gameover]) and
+    map.walker.inrange(self.boat2,40) then
+  Result:= True;
+end;
+
+function TPest.AssignBoatStates:EBoats;
+begin
+  If self.FindCombatLevel>=100 then
+  exit(EBoats.EXPERT);
+
+    If self.FindCombatLevel >=40 then
+    (EBoats.NOVICE);
+      If self.FindCombatLevel <70 then
+      exit (EBoats.NOVICE);
+
+      If self.FindCombatLevel >=70 then
+      (EBoats.INTERMEDIATE);
+        If self.FindCombatLevel <100 then
+        exit (EBoats.INTERMEDIATE);
+end;
+
+procedure TPest.JoinGame;
+var
+action:EBoats;
+begin
+ While self.OnMainIsland=True and self.inboatwaiting=False do
+  begin
+    self.FindCombatLevel;
+    action:= self.AssignBoatStates;
+    writeln (action);
+      case action of
+        Eboats.EXPERT: self.BoardExpertBoat;
+        EBoats.INTERMEDIATE: self.BoardIntermediateBoat;
+        Eboats.NOVICE:self.BoardNoobBoat;
+      end;
+    sleepuntil((self.InboatWaiting),200,3500);
+  end;
+end;
+
+procedure TPest.BattleStartProcedure;
+begin
+ // map.walker.webwalk(self.walkerpaths.platform,0,0,false);
+  writeln 'Walking To SETower Ladder';
+  map.walker.walkblind(self.SELadderPoint,4);
+  writeln 'Climbing Ladder';
+  self.SETowerLadder.Click(True,5);
+  sleep (1200,1800);
+  writeln 'Ready To Attack';
+end;
+
+function TPest.AreAnyPortalsOpen:Boolean;
+begin
+  if self.IsEastPortalOpen then
+  result:=True;
+     if self.IsWestPortalOpen then
+     result:=True;
+       if self.IsSouthEastPortalOpen then
+       result:=True;
+         if self.IsSouthWestPortalOpen then
+         result:=True;
+end;
+
+function TPest.IsWestPortalAbove1:boolean;
+begin
+  If self.CheckWestPortalHealth >=1 then
+  result:=True;
+end;
+
+function TPest.IsEastPortalAbove1:boolean;
+begin
+  If self.CheckEastPortalHealth >=1 then
+  result:=True;
+end;
+
+function TPest.IsSouthWestPortalAbove1:boolean;
+begin
+  If self.CheckSouthWestPortalHealth >=1then
+  result:=True;
+end;
+
+function TPest.IsSouthEastPortalAbove1:boolean;
+begin
+  If self.CheckSouthEastPortalHealth >=1 then
+  result:=True;
+end;
+
+function TPest.AssignPortalStates:EPortalStates;
+begin
+    if self.IsEastPortalOpen and self.IsEastPortalAbove1 then
+    exit(EPortalStates.EAST_OPEN);
+     if self.IsWestPortalOpen and self.IsWestPortalAbove1 then
+     exit(EPortalStates.WEST_OPEN);
+       if self.IsSouthEastPortalOpen and self.IsSouthEastPortalAbove1 then
+       exit(EPortalStates.SOUTHEAST_OPEN);
+         if self.IsSouthWestPortalOpen and self.IsEastPortalAbove1 then
+        exit(EPortalStates.SOUTHWEST_OPEN);
+          if not self.AreAnyPortalsOpen then
+          exit (EPortalStates.NO_PORTALS);
+end;
+
+function TPest.TimedPortalStates:EPortalStates;
+begin
+  self.timer.start(3000);
+    while self.timer.Remaining<>0 do
+    nil;
+      If self.timer.isfinished then
+      Result:= self.AssignPortalStates;
+
+end;
+
+procedure TPest.ExecuteAttackStates;
+var
+Action:EPortalStates;
+begin
+  If self.OnMainIsland then
+  exit;
+  While Self.OnBattlefield do
+ begin
+   Action:= self.TimedPortalStates;
+   writeln (Action);
+   case action of
+     EPortalStates.WEST_OPEN: self.AttackWestPortal;
+     EPortalStates.EAST_OPEN: self.AttackEastPortal;
+   end;
+ end;
+end;
+
+function TPest.AssignKillStates:EKillStates;
+var
+coordinates:TPointArray;
+begin
+  If self.Torchers.Find(coordinates,self.ATPA) then
+  exit(EKillStates.KILL_TORCHER);
+    If self.Defilers.Find(coordinates,self.ATPA) then
+    exit(EKillStates.KILL_DEFILER);
+      If self.Brawlers.Find(coordinates,self.ATPA) then
+      exit(EKillStates.KILL_BRAWLER);
+        If self.Splatters.Find(coordinates,self.ATPA) then
+        exit(EKillStates.KILL_SPLATTER);
+          If self.Ravengers.Find(coordinates,self.ATPA) then
+          exit(EKillStates.KILL_RAVENGER);
+end;
+
+function TPest.TimedAssignKillStates:EKillStates;
+begin
+  self.timer.start(4000);
+    while self.timer.Remaining<>0 do
+    nil;
+      If self.timer.isfinished then
+      Result:= self.AssignKillStates;
+end;
+
+
+procedure TPest.GetNextKill;
+var
+Action:EKillStates;
+begin
+ If self.OnMainIsland then
+  exit;
+  While Self.OnBattlefield do
+ begin
+  If not map.walker.inrange(self.SELadderPoint,25) then
+  self.BattleStartProcedure;
+   Action:= self.AssignKillStates;
+   writeln (Action);
+   case action of
+   EKillStates.KILL_DEFILER:self.AttackDefiler;
+   EKillStates.KILL_BRAWLER:self.AttackBrawler;
+   EKillStates.KILL_TORCHER:self.AttackTorcher;
+   EKillStates.KILL_SPLATTER:Self.AttackSplatter;
+   end;
+ end;
+end;
+
+function TPest.AssignPestStates: EGameStates;
+begin
+  if self.OnMainIsland and self.InboatWaiting then
+  exit (EGameStates.WAITING_IN_BOAT);
+    If self.OnMainIsland then
+    exit(EGameStates.GAME_ENDED);
+      If self.OnBattlefield then
+      exit (EGameStates.INGAME);
+end;
+
+function TPest.FinalRun:EGameStates;
+var
+Action:EGameStates;
+begin
+ while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
+  begin
+   Action:= self.AssignPestStates;
+   writeln (Action);
+   case action of
+   EGameStates.GAME_ENDED: self.joingame;
+   EGameStates.INGAME: self.GetNextKill;
+   EGameStates.WAITING_IN_BOAT: self.Waitingstate;
+   end;
+ end;
+end;
+
+var
+  Run:TPest;
+begin
+  Run.Init;
+  Run.FinalRun;
+end.  
