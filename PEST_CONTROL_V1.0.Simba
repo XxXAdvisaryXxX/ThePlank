@@ -162,24 +162,24 @@ begin
   Self.Defilers.Track:=True;
 
   self.Torchers:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Torcher','Defiler','Brawler','Ravenger','Shifter','Splatter','Spinner'],[ERSMinimapDot.NPC]);
-  self.Torchers.Finder.Colors += [$535000, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  self.Torchers.Finder.Colors += [$6E81B1, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  self.Torchers.Finder.Colors +=[$5A6A91, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  self.Torchers.Finder.Colors += [$9C629D, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$535000, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$6E81B1, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$5A6A91, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$9C629D, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors += [$86A3B9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  self.Torchers.Finder.Colors += [$73B9AF, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  self.Torchers.Finder.Colors +=[$B59671, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$73B9AF, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$B59671, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  self.Torchers.Finder.Colors += [$1B2A9C, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$1B2A9C, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors +=[$5D6884, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  self.Torchers.Finder.Colors += [$B48FCA, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  self.Torchers.Finder.Colors +=[$1B2DA9, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$B48FCA, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$1B2DA9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors +=[$3995B9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors +=[$555CAF, 2, EColorSpace.RGB, [0.848, 1.286, 0.867]];
   self.Torchers.Finder.Colors +=[$BB9B75, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  self.Torchers.Finder.Colors +=[$C4D8D9, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$C4D8D9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors +=[$6E686C, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors += [$878B91, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   Self.Torchers.Track:=True;
@@ -252,6 +252,14 @@ begin
     Minimap.CompassRadians := Minimap.CompassRadians + PI/3.6 * Random(-1,1);
   end;
 end;
+function TPest.IsInCombat:Boolean;
+var
+splats:TRSHitSplatArray;
+splat:TRSHitSplat;
+begin
+  If splat.Find(splats) then
+  result:=True;
+end;
 
 function TPest.PercentPixelDiff(Area: TBox; WaitTime: Int32): Int32;   //writes pixel shift in %
 var
@@ -282,7 +290,7 @@ begin
   exit;
   begin
   Self.Torchers.Click (True,1);
-  sleepuntil((self.IsShootingArrows=False),1000,4000);
+  sleepuntil((self.IsInCombat=False),3500,10000);
   //sleep (800,1350);
   end;
 end;
@@ -732,4 +740,5 @@ var
 begin
   Run.Init;
   Run.FinalRun;
-end.                                         
+  //writeln run.InboatWaiting;
+end.                                    
