@@ -1,6 +1,18 @@
 {
-**** DO NOT TRY TO RUN ** WILL ERROR OUT ** BE READY SOON!!
+****PEST CONTROL V1.0 (RANGE ONLY)****
+Welcome to the beta. This is just for testing purposes. If people like it will add more features.
+
+**While in Beta IMPORTANT TO READ INSTRUCTIONS Below.
+
+Instructions
+
+***Version 1.0 will only support FIXED-CLASSIC
+^^^Start near your boat***
+***For best results use CROSSBOW on LONGRANGE****
+*** TURN OFF Auto-Retaliate and Make Sure NPC ATTACK is the default 'ALWAYS LEFT CLICK' ****
+***NOVICE BOAT GAMEPLAY NOT TESTED. INTERMEDIATE and EXPERT BOTH TESTED
 }
+
 {$I Wasplib/osrs.simba}
 const
   MAX_RUNTIME_MINUTES = 360; //Controls how long the max runtime is
@@ -18,16 +30,17 @@ const
     EXPERT
    );
 
-    EKillStates = enum //ENUm record for lander boats
+    EKillStates = enum //ENUm record kill states
    (KILL_BRAWLER,
     KILL_TORCHER,
     KILL_DEFILER,
     KILL_SPINNER,
     KILL_RAVENGER,
-    KILL_SPLATTER
+    KILL_SPLATTER,
+    KILL_SHIFTER
    );
 
-   EPortalStates = enum //
+   EPortalStates = enum // EPortal States. Available But Not Used. For Later Versions
     ( //open variants
      EAST_OPEN,
      WEST_OPEN,
@@ -36,7 +49,7 @@ const
      NO_PORTALS
     );
 
-    EAttackStates =enum //
+    EAttackStates =enum // Available not used... For Later Versions
      (ATTACK_WEST,
       ATTACK_EAST,
       ATTACK_SOUTHWEST,
@@ -56,6 +69,7 @@ const
       timer:tcountdown;
       CuBoidArray:TCuboidArray;
       Coordinates:TPointArray;
+      Projection:TProjection;
 
       Overlay:record //record for overlay tracking
         eastbox,westbox,swbox,sebox,gameover,inboattext,gamestart: TBox;
@@ -68,7 +82,7 @@ const
         platform:TPoint;
       end;
 
-      GateLocations:record
+      GateLocations:record //Record For location for all the gates
         south,east,west:Tpoint;
       end;
     end;
@@ -137,41 +151,108 @@ begin
   self.combatlevelcheck.CombatLevel:=[551,249,640,290];
 
   //Monster Loading
-  self.Spinners:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Spinner'],[ERSMinimapDot.NPC]);
+  self.Spinners:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Spinner'],[ERSMinimapDot.NPC]);
   self.Spinners.Finder.Colors += [$878B91, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   Self.Spinners.Track:=True;
 
-  self.Defilers:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Defiler'],[ERSMinimapDot.NPC]);
+  self.Defilers:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Defiler'],[ERSMinimapDot.NPC]);
   self.Defilers.Finder.Colors += [$6E81B1, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Defilers.Finder.Colors +=[$5A6A91, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Defilers.Finder.Colors += [$9C629D, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   Self.Defilers.Track:=True;
 
-  self.Torchers:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Torcher'],[ERSMinimapDot.NPC]);
+  self.Torchers:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Torcher','Defiler','Brawler','Ravenger','Shifter','Splatter','Spinner'],[ERSMinimapDot.NPC]);
   self.Torchers.Finder.Colors += [$535000, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$6E81B1, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$5A6A91, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$9C629D, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$86A3B9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$73B9AF, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$B59671, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$1B2A9C, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$5D6884, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$B48FCA, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$1B2DA9, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$3995B9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$555CAF, 2, EColorSpace.RGB, [0.848, 1.286, 0.867]];
+  self.Torchers.Finder.Colors +=[$BB9B75, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$C4D8D9, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$6E686C, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors += [$878B91, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   Self.Torchers.Track:=True;
 
-  self.Brawlers:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Brawler'],[ERSMinimapDot.NPC]);
+  self.Brawlers:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Brawler'],[ERSMinimapDot.NPC]);
   self.Brawlers.Finder.Colors += [$86A3B9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Brawlers.Finder.Colors += [$73B9AF, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Brawlers.Finder.Colors +=[$B59671, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  Self.Brawlers.Track:=True;
+  //Self.Brawlers.Track:=True;
 
-  self.Splatters:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Splatter'],[ERSMinimapDot.NPC]);
+  self.Splatters:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Splatter'],[ERSMinimapDot.NPC]);
   self.Splatters.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Splatters.Finder.Colors +=[$5D6884, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Splatters.Finder.Colors += [$B48FCA, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  Self.Splatters.Track:=True;
+  //Self.Splatters.Track:=True;
 
-  self.Shifters:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Shifter'],[ERSMinimapDot.NPC]);
+  self.Shifters:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Shifter'],[ERSMinimapDot.NPC]);
   self.Shifters.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  Self.Shifters.Track:=True;
+  self.Shifters.Finder.Colors += [$1B2A9C, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  //Self.Shifters.Track:=True;
 
-  self.Ravengers:= TRSEntity.Create(@map.walker,[2,2,10],36,[self.gatelocations.east,self.MonsterSearchPoint],['Shifter'],[ERSMinimapDot.NPC]);
+  self.Ravengers:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Shifter'],[ERSMinimapDot.NPC]);
   self.Ravengers.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
-  Self.Ravengers.Track:=True;
+  //Self.Ravengers.Track:=True;
+
+  Projection.system := EProjector.MM2MS ;
      //debug
  showontarget (self.torchers);
 end;
+
+function TRSEntity._HoverHelper(attempts: Integer): Boolean; override;    //A library Override
+var
+  shouldExit: Boolean;
+  attempt, i: Integer;
+  atpa: T2DPointArray;
+  coordinates, tpa: TPointArray;
+begin
+  Result := Self._UpTextCheck(shouldExit);
+  if shouldExit then Exit;
+
+  for attempt := 0 to attempts do
+  begin
+    if Self.Find(coordinates, atpa) then
+    begin
+      if Length(coordinates) <> Length(atpa) then
+      begin
+        atpa += coordinates;
+       // writeln coordinates;
+        //ShowOnTarget(atpa);
+        //raise 'SOMETHING WENT WRONG CACHING COORDINATES.';
+      end;
+
+      if attempt < 2 then i := 0
+      else if Length(atpa) > (attempt - 2) then i := attempt - 2
+      else i := Random(Low(atpa), High(atpa));
+
+      tpa := atpa[i];
+      Self.LastCoordinate := coordinates[i];
+
+      Mouse.Move(tpa.RandomMean());
+
+      if Self.UpText = [] then Exit(True);
+    end;
+
+    if MainScreen.IsUpText(Self.UpText) then Exit(True);
+
+    if attempt <> (attempts - 1) then
+      Continue;
+
+    Minimap.CompassRadians := Minimap.CompassRadians + PI/3.6 * Random(-1,1);
+  end;
+end;
+
 function TPest.PercentPixelDiff(Area: TBox; WaitTime: Int32): Int32;   //writes pixel shift in %
 var
   tLen,sLen: Int32;
@@ -182,27 +263,27 @@ begin
   writeln (Result);
 end;
 
-function TPest.IsShootingArrows:Boolean; //uses pixel diff to determine if player is in mining annamitation
+function TPest.IsShootingArrows:Boolean; //uses pixel diff to determine if player is shooting arrow annamitation
 begin
   If (self.PercentPixelDiff ((mainscreen.PlayerBox),500))>12 then
     Result:=True else
       Result:=False;
 end;
 
-procedure TPest.WaitingOnPortal;
+procedure TPest.WaitingOnPortal;  //Unused - But will be implemented later
 begin
   writeln 'Waiting For Portal To Open';
   map.walker.webwalk(self.walkerpaths.platform,4,0,false);
 end;
 
-procedure TPest.AttackTorcher;
+procedure TPest.AttackTorcher;  //attacks torchers.
 begin
   if not self.Torchers.find(self.Coordinates,self.ATPA) then
   exit;
   begin
-  Self.Torchers.Click (True,5);
-  //sleepuntil((self.IsShootingArrows=False),2000,15000);
-  sleep (800,1350);
+  Self.Torchers.Click (True,1);
+  sleepuntil((self.IsShootingArrows=False),1000,4000);
+  //sleep (800,1350);
   end;
 end;
 
@@ -211,9 +292,9 @@ begin
   if not self.Defilers.find(self.Coordinates,self.ATPA) then
   exit;
   begin
-  Self.Defilers.Click (True,5);
-  //sleepuntil((self.IsShootingArrows=False),2000,15000);
-  sleep (800,1350);
+  Self.Defilers.Click (True,1);
+  sleepuntil((self.IsShootingArrows=False),200,2000);
+  //sleep (800,1350);
   end;
 end;
 
@@ -222,9 +303,9 @@ begin
   if not self.Brawlers.find(self.Coordinates,self.atpa) then
   exit;
   begin
-  Self.Brawlers.click (True,5);
-  //sleepuntil((self.IsShootingArrows=False),2000,15000);
-  sleep (800,1350);
+  Self.Brawlers.click (True,1);
+  sleepuntil((self.IsShootingArrows=False),2000,2000);
+  //sleep (800,1350);
   end;
 end;
 
@@ -233,9 +314,9 @@ begin
   if not self.Splatters.find(self.Coordinates,self.ATPA) then
   exit;
   begin
-  Self.Splatters.Click (True,5);
-  //sleepuntil((self.IsShootingArrows=False),2000,15000);
-  sleep (800,1350);
+  Self.Splatters.Click (True,1);
+  sleepuntil((self.IsShootingArrows=False),2000,2000);
+  //sleep (800,1350);
   end;
 end;
 
@@ -244,9 +325,9 @@ begin
   if not self.Ravengers.find(self.Coordinates,self.atpa) then
   exit;
   begin
-  Self.Ravengers.click (True,5);
-  //sleepuntil((self.IsShootingArrows=False),2000,15000);
-  sleep (800,1350);
+  Self.Ravengers.click (True,1);
+  sleepuntil((self.IsShootingArrows=False),2000,2000);
+  //sleep (800,1350);
   end;
 end;
 
@@ -255,19 +336,19 @@ begin
   if not self.Shifters.find(self.Coordinates,self.atpa) then
   exit;
   begin
-  Self.Shifters.click (True,5);
-  //sleepuntil((self.IsShootingArrows=False),2000,15000);
-  sleep (800,1350);
+  Self.Shifters.click (True,1);
+  sleepuntil((self.IsShootingArrows=False),2000,15000);
+  //sleep (800,1350);
   end;
 end;
 
-function TPest.FindCombatLevel:Int32;
+function TPest.FindCombatLevel:Int32;  //Used to read combat lvel.
 begin
   Achievements.Open;
   Result := OCR.RecognizeNumber(self.combatlevelcheck.CombatLevel, RSFonts.PLAIN_11, [self.checkgreen], 5);
 end;
 
-function TPest.InboatWaiting:Boolean;
+function TPest.InboatWaiting:Boolean;  //used to know if in a lander waiting for game to start or not
 begin
   If OCR.RecognizeNumber(Self.overlay.inboattext , RSFonts.PLAIN_12, [self.boatorange], 5)>=1 then
     result:=true else
@@ -280,42 +361,43 @@ begin
   end;
 end;
 
-procedure TPest.WaitingState;
+procedure TPest.WaitingState;  //used for waiting in the boat
 begin
   If self.inboatwaiting then
-  sleepuntil((self.inboatwaiting=false),200,30000);
+  sleepuntil((self.inboatwaiting=false),10,30000);
 end;
 
-function TPest.OnBattlefield: Boolean;
+function TPest.OnBattlefield: Boolean; //Used to tell if player is on the battlefield or not
 begin
   If map.walker.inrange(self.walkerpaths.platform,125) then
   result:=True;
 end;
 
-function TPest.OnMainIsland: Boolean;
+function TPest.OnMainIsland: Boolean;//Used to tell if player is on the main pest control island.
 begin
   If map.walker.inrange(self.boat2,125) then
   result:=True;
 end;
-procedure TPest.BoardIntermediateBoat;
+procedure TPest.BoardIntermediateBoat;   //boards intermediate boat
 begin
-  {DEBUG}writeln 'Walking TO Boat 2';
-  map.walker.webwalk(self.boat2,4,0,false);
+  if not map.walker.inrange((self.boat2),18) then
+  map.walker.webwalk(self.boat2,4,0,false) else
 
   {DEBUG}writeln 'Made To Destination.. Boarding Boat';
-  self.boat2plank.click (True,2);
-  sleepuntil((self.InboatWaiting=True),200,6000);
+  self.boat2plank.click (True,7);
+  //sleepuntil((self.InboatWaiting=True),30,6000);
 
   {DEBUG}writeln 'Waiting FOR Game';
 end;
 
 procedure TPest.BoardExpertBoat;
 begin
-  {DEBUG}writeln 'Walking Expert Boat';
-  map.walker.webwalk(self.boat3,4,0,false);
+
+ map.walker.webwalk(self.boat3,4,0,false);
 
   {DEBUG}writeln 'Made To Destination.. Boarding Boat';
-  self.boat3plank.click (True,2);
+  self.boat3plank.click (True,7);
+   sleepuntil((self.InboatWaiting=True),1,6000);
 
 
   {DEBUG}writeln 'Waiting FOR Game';
@@ -323,17 +405,18 @@ end;
 
 procedure TPest.BoardNoobBoat;
 begin
-  {DEBUG}writeln 'Walking NOOB Boat';
+
   map.walker.webwalk(self.boat1,4,0,false);
 
   {DEBUG}writeln 'Made To Destination.. Boarding Boat';
-  self.boat1plank.click (True,2);
+  self.boat1plank.click (True,10);
+   sleepuntil((self.InboatWaiting=True),30,6000);
 
 
   {DEBUG}writeln 'Waiting FOR Game';
 end;
 
-procedure TPest.WalkWestPortal;
+procedure TPest.WalkWestPortal; //GOnna be used in melee if implemented same for similar below.
 begin
   writeln 'Walking to West Gate';
   //map.walker.webwalk(self.gatelocations.west,4,0,false);
@@ -371,7 +454,7 @@ procedure TPest.AttackEastPortal;
   self.eastob.Click(True,2);
 end;
 
-function TPest.IsWestPortalOpen:Boolean;
+function TPest.IsWestPortalOpen:Boolean;// used to find if shield is over portal. Same for similar below
 var
 ATPA: T2DPointArray;
 begin
@@ -411,7 +494,7 @@ begin
      Result:= True;
 end;
 
-function TPest.CheckWestPortalHealth:Int32;
+function TPest.CheckWestPortalHealth:Int32; //reads the health bars of individual portals.
 begin
   Result := OCR.RecognizeNumber(Self.overlay.westbox, RSFonts.PLAIN_11, [self.portgreen], 5);
 end;
@@ -431,17 +514,17 @@ begin
   Result := OCR.RecognizeNumber(Self.overlay.sebox, RSFonts.PLAIN_11, [self.portgreen], 5);
 end;
 
-function TPest.DidGameStart: Boolean;
+function TPest.DidGameStart: Boolean; //Lets us no when we have started a new game.
 begin
  If self.overlay.startgame.find(self.ATPA,[self.overlay.gamestart]) and
   map.walker.inrange([6536,40010],40) then
  Result:= True;
 end;
 
-function TPest.DidGameEnd: Boolean;
+function TPest.DidGameEnd: Boolean;  //lets us know the game has ended
 begin
   If self.overlay.endgame.find(self.ATPA,[self.overlay.gameover]) and
-    map.walker.inrange(self.boat2,40) then
+    map.walker.inrange(self.boat2,100) then
   Result:= True;
 end;
 
@@ -475,18 +558,19 @@ begin
         EBoats.INTERMEDIATE: self.BoardIntermediateBoat;
         Eboats.NOVICE:self.BoardNoobBoat;
       end;
-    sleepuntil((self.InboatWaiting),200,3500);
+     exit;
   end;
 end;
 
 procedure TPest.BattleStartProcedure;
 begin
- // map.walker.webwalk(self.walkerpaths.platform,0,0,false);
+  if not self.OnBattlefield then
+  exit;
   writeln 'Walking To SETower Ladder';
-  map.walker.walkblind(self.SELadderPoint,4);
+  map.walker.walkblind (self.SELadderPoint,8);
   writeln 'Climbing Ladder';
-  self.SETowerLadder.Click(True,5);
-  sleep (1200,1800);
+  self.SETowerLadder.Click(True,15);
+  sleep (1425,2000);
   writeln 'Ready To Attack';
 end;
 
@@ -575,8 +659,10 @@ begin
   exit(EKillStates.KILL_TORCHER);
     If self.Defilers.Find(coordinates,self.ATPA) then
     exit(EKillStates.KILL_DEFILER);
-      If self.Brawlers.Find(coordinates,self.ATPA) then
-      exit(EKillStates.KILL_BRAWLER);
+      If self.Shifters.Find(coordinates,self.ATPA) then
+      exit(EKillStates.KILL_SHIFTER);
+        If self.Brawlers.Find(coordinates,self.ATPA) then
+        exit(EKillStates.KILL_BRAWLER);
         If self.Splatters.Find(coordinates,self.ATPA) then
         exit(EKillStates.KILL_SPLATTER);
           If self.Ravengers.Find(coordinates,self.ATPA) then
@@ -610,6 +696,7 @@ begin
    EKillStates.KILL_BRAWLER:self.AttackBrawler;
    EKillStates.KILL_TORCHER:self.AttackTorcher;
    EKillStates.KILL_SPLATTER:Self.AttackSplatter;
+   EKillStates.KILL_SHIFTER:self.AttackShifter;
    end;
  end;
 end;
@@ -645,4 +732,4 @@ var
 begin
   Run.Init;
   Run.FinalRun;
-end.  
+end.                                         
