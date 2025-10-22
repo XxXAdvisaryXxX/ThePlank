@@ -8,6 +8,7 @@ Place For My OSRS Bots.
 
 
 -Scripts are coded and ran with Simba2k and Wasplib2.0!
+WaspScript Launcher Downloader - https://waspscripts.dev/setup
 
 Wasplib Resp - https://github.com/WaspScripts/WaspLib
 
