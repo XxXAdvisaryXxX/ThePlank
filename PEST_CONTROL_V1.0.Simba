@@ -2,15 +2,16 @@
 ****PEST CONTROL V1.0 (RANGE ONLY)****
 Welcome to the beta. This is just for testing purposes. If people like it will add more features.
 
-**While in Beta IMPORTANT TO READ INSTRUCTIONS Below.
+**While in Beta IMPORTANT TO READ INSTRUCTIONS Below 
 
 Instructions
 
 ***Version 1.0 will only support FIXED-CLASSIC
 ^^^Start near your boat***
-***For best results use CROSSBOW on LONGRANGE****
+***For best results use CROSSBOW on LONGRANGE**** 
 *** TURN OFF Auto-Retaliate and Make Sure NPC ATTACK is the default 'ALWAYS LEFT CLICK' ****
 ***NOVICE BOAT GAMEPLAY NOT TESTED. INTERMEDIATE and EXPERT BOTH TESTED
+***Will Sometimes sit idle. This will happen every once in a while. Just let it do its thing
 }
 
 {$I Wasplib/osrs.simba}
