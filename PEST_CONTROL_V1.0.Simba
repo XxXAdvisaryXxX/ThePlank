@@ -208,7 +208,7 @@ begin
 
   Projection.system := EProjector.MM2MS ;
      //debug
- showontarget (self.torchers);
+//showontarget (self.torchers);
 end;
 
 function TRSEntity._HoverHelper(attempts: Integer): Boolean; override;    //A library Override
