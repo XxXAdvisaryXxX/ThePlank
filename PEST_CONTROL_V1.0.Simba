@@ -362,6 +362,7 @@ end;
 function TPest.FindCombatLevel:Int32;  //Used to read combat lvel.
 begin
   Achievements.Open;
+  Achievements.OpenTab(ERSAchievementTab.SUMMARY);
   Result := OCR.RecognizeNumber(self.combatlevelcheck.CombatLevel, RSFonts.PLAIN_11, [self.checkgreen], 5);
 end;
 
@@ -403,7 +404,7 @@ begin
   {DEBUG}writeln 'Made To Destination.. Boarding Boat';
   self.boat2plank.click (True,7);
   //sleepuntil((self.InboatWaiting=True),30,6000);
-
+   antiban.DoAntiban;
   {DEBUG}writeln 'Waiting FOR Game';
 end;
 
@@ -415,6 +416,7 @@ begin
   {DEBUG}writeln 'Made To Destination.. Boarding Boat';
   self.boat3plank.click (True,7);
    sleepuntil((self.InboatWaiting=True),1,6000);
+   antiban.DoAntiban;
 
 
   {DEBUG}writeln 'Waiting FOR Game';
@@ -428,6 +430,7 @@ begin
   {DEBUG}writeln 'Made To Destination.. Boarding Boat';
   self.boat1plank.click (True,10);
    sleepuntil((self.InboatWaiting=True),30,6000);
+   antiban.DoAntiban;
 
 
   {DEBUG}writeln 'Waiting FOR Game';
@@ -734,6 +737,7 @@ Action:EGameStates;
 begin
  while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
   begin
+  //antiban.DoAntiban;
    Action:= self.AssignPestStates;
    writeln (Action);
    case action of
@@ -750,4 +754,4 @@ begin
   Run.SetupAntiBan;
   Run.Init;
   Run.FinalRun;
-end. 
+end.                                   
