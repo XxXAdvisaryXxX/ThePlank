@@ -58,7 +58,7 @@ const
      );
 
     TPest = record  //record holding vars
-      boat1,boat2,boat3, westpoint, eastpoint, southwestpoint, southeastpoint,SELadderPoint,NELadderPoint,MonsterSearchPoint:TPoint;
+      SOuthMonsterPoint,boat1,boat2,boat3, westpoint, eastpoint, southwestpoint, southeastpoint,SELadderPoint,NELadderPoint,MonsterSearchPoint:TPoint;
       boat1plank,boat2plank,boat3plank,westob,eastob,southwestob,southeastob,SETowerLadder,SWTowerLadder:TRSObject;
       Ravengers,Spinners,Torchers,Defilers,Brawlers,Splatters,Shifters:TRSEntity;
       Monsters:TRSEntityArray;
@@ -121,6 +121,7 @@ begin
   self.southeastpoint:= [6584,40134];
   self.walkerpaths.platform:= [6528, 40054];//Void Knight Plateform
   self.MonsterSearchPoint:=[6568,40130];
+  self.SOuthMonsterPoint:= [6532,40114];
 
   //***Portal Object Creation
   self.eastob:= TRSObject.Create(@map.walker,[2,2,10],[[6884,39498]],['Attack Portal']);
@@ -160,17 +161,17 @@ begin
   self.combatlevelcheck.CombatLevel:=[551,249,640,290];
 
   //Monster Loading
-  self.Spinners:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Spinner'],[ERSMinimapDot.NPC]);
+  self.Spinners:= TRSEntity.Create(@map.walker,[2,2,10],28,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Spinner'],[ERSMinimapDot.NPC]);
   self.Spinners.Finder.Colors += [$878B91, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   Self.Spinners.Track:=True;
 
-  self.Defilers:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Defiler'],[ERSMinimapDot.NPC]);
+  self.Defilers:= TRSEntity.Create(@map.walker,[2,2,10],28,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Defiler'],[ERSMinimapDot.NPC]);
   self.Defilers.Finder.Colors += [$6E81B1, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Defilers.Finder.Colors +=[$5A6A91, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Defilers.Finder.Colors += [$9C629D, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   Self.Defilers.Track:=True;
 
-  self.Torchers:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Torcher','Defiler','Brawler','Ravenger','Shifter','Splatter','Spinner'],[ERSMinimapDot.NPC]);
+  self.Torchers:= TRSEntity.Create(@map.walker,[2,2,10],28,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086],self.SOuthMonsterPoint],['Torcher','Defiler','Brawler','Ravenger','Shifter','Splatter','Spinner'],[ERSMinimapDot.NPC]);
   self.Torchers.Finder.Colors += [$535000, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors += [$6E81B1, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors +=[$5A6A91, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
@@ -191,26 +192,27 @@ begin
   self.Torchers.Finder.Colors +=[$C4D8D9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors +=[$6E686C, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Torchers.Finder.Colors += [$878B91, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Torchers.Finder.Colors +=[$201B20, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   Self.Torchers.Track:=True;
 
-  self.Brawlers:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Brawler'],[ERSMinimapDot.NPC]);
+  self.Brawlers:= TRSEntity.Create(@map.walker,[2,2,10],28,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Brawler'],[ERSMinimapDot.NPC]);
   self.Brawlers.Finder.Colors += [$86A3B9, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Brawlers.Finder.Colors += [$73B9AF, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Brawlers.Finder.Colors +=[$B59671, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   //Self.Brawlers.Track:=True;
 
-  self.Splatters:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Splatter'],[ERSMinimapDot.NPC]);
+  self.Splatters:= TRSEntity.Create(@map.walker,[2,2,10],28,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Splatter'],[ERSMinimapDot.NPC]);
   self.Splatters.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Splatters.Finder.Colors +=[$5D6884, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Splatters.Finder.Colors += [$B48FCA, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   //Self.Splatters.Track:=True;
 
-  self.Shifters:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Shifter'],[ERSMinimapDot.NPC]);
+  self.Shifters:= TRSEntity.Create(@map.walker,[2,2,10],28,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Shifter'],[ERSMinimapDot.NPC]);
   self.Shifters.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   self.Shifters.Finder.Colors += [$1B2A9C, 3, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   //Self.Shifters.Track:=True;
 
-  self.Ravengers:= TRSEntity.Create(@map.walker,[2,2,10],35,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Shifter'],[ERSMinimapDot.NPC]);
+  self.Ravengers:= TRSEntity.Create(@map.walker,[2,2,10],28,[self.gatelocations.east,self.MonsterSearchPoint,self.walkerpaths.platform,[6528,40086]],['Shifter'],[ERSMinimapDot.NPC]);
   self.Ravengers.Finder.Colors += [$2A46A4, 2, EColorSpace.RGB, [1.000, 1.000, 1.000]];
   //Self.Ravengers.Track:=True;
 
@@ -586,8 +588,9 @@ procedure TPest.BattleStartProcedure;
 begin
   if not self.OnBattlefield then
   exit;
+  options.setzoomlevel(25);
   writeln 'Walking To SETower Ladder';
-  map.walker.walkblind (self.SELadderPoint,8);
+  map.walker.walkblind (self.SELadderPoint,4);
   writeln 'Climbing Ladder';
   self.SETowerLadder.Click(True,15);
   sleep (1425,2000);
@@ -754,4 +757,4 @@ begin
   Run.SetupAntiBan;
   Run.Init;
   Run.FinalRun;
-end.                                   
+end.                                      
