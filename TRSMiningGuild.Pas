@@ -1,0 +1,240 @@
+{$INCLUDE_ONCE WaspLib/osrs.simba}
+  TRSMiningGuild = record
+    BankChest,DepositBox:TRSObject;
+    CoalBag:TRSItem;
+
+    Iron: record
+      Rock1,Rock2,Rock3,Rock4,Rock5,Rock6: TRSObject;
+      Ore:TRSItem;
+      Spot1,Spot2:TPoint;{Spots For Powermining Iron}
+
+      Depleted: Record
+      Rock1,Rock2,Rock3,Rock4,Rock5,Rock6:TRSObject;
+      end;
+    end;
+
+    Addy: record
+      Rock1,Rock2,Rock3,Rock4,Rock5,Rock6,Rock7,Rock8: TRSObject;
+      Ore:TRSItem;
+
+      Depleted: Record
+        Rock1,Rock2,Rock3,Rock4,Rock5,Rock6,Rock7,Rock8:TRSObject;
+      end;
+    end;
+  end;
+
+ (*
+## MiningGuild.MapInit;
+```pascal
+procedure TRSMiningGuild.MapInit;
+```
+Internal Method that loads maps and items. Will never need to be called directly. TRSMiningGuild.MainInit; calls this automatically!
+*)
+procedure TRSMiningGuild.MapInit;
+begin
+   Map.Setup([ERSChunk.MINING_GUILD]);
+   self.DepositBox:= TRSObject.Create(@map.walker,[1,1,2],[[7956,11550]],['Deposit Bank Deposit Box']);
+   self.BankChest:=  TRSObject.Create(@map.walker,[1,1,2],[[7952,11558]],['Use Bank chest']);
+   self.CoalBag:= 'Coal bag';
+end;
+
+ (*
+## MiningGuild.IronRockInit;
+```pascal
+procedure TRSMiningGuild.IronRockInit;
+```
+Internal Method that loads all Iron rocks. This will never need to be called directly. TRSMiningGuild.MainInit; calls this automatically!
+*)
+procedure TRSMiningGuild.IronRockInit;
+begin
+  {First Group Of Iron Rocks By Bank}
+  self.Iron.Rock1:= TRSObject.Create(@map.walker,[1,1,2],[[7984,11546]],['Mine Iron rock']);
+  self.Iron.Rock2:= TRSObject.Create(@map.walker,[1,1,2],[[7988,11542]],['Mine Iron rock']);
+  self.Iron.Rock3:= TRSObject.Create(@map.walker,[1,1,2],[[7988,11550]],['Mine Iron rock']);
+  {Second Group Of Iron Rocks}
+  self.Iron.Rock4:= TRSObject.Create(@map.walker,[1,1,2],[[8016,11550]],['Mine Iron rock']);
+  self.Iron.Rock4.Finder.Colors += [$202A3D, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Iron.Rock5:= TRSObject.Create(@map.walker,[1,1,2],[[8020,11546]],['Mine Iron rock']);
+  self.Iron.Rock5.Finder.Colors += [$202A3D, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Iron.Rock6:= TRSObject.Create(@map.walker,[1,1,2],[[8024,11550]],['Mine Iron rock']);
+  self.Iron.Rock6.Finder.Colors += [$202A3D, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  {Static Places To Mine Iron}
+  self.iron.Spot1:= [7988,11546];
+  self.Iron.Spot2:= [8020,11550];
+  {Same AS Above But For Depleted Rocks}
+end;
+
+ (*
+## MiningGuild.AddyRockInit;
+```pascal
+procedure TRSMiningGuild.AddyRockInit;
+```
+Internal Method that loads all addy rocks. This will never need to be called directly. TRSMiningGuild.MainInit; calls this automatically!
+*)
+
+procedure TRSMiningGuild.AddyRockInit;
+begin
+  self.Addy.Ore:='Adamantite ore';
+  self.Addy.Rock1 := TRSObject.Create(@map.walker,[1,1,2],[[8024,11530]],['Mine Adamantite rock']);
+  self.Addy.Rock2 := TRSObject.Create(@map.walker,[1,1,2],[[8048,11530]],['Mine Adamantite rock']);
+  self.Addy.Rock3 := TRSObject.Create(@map.walker,[1,1,2],[[8088,11526]],['Mine Adamantite rock']);
+  self.Addy.Rock4 := TRSObject.Create(@map.walker,[1,1,2],[[8092,11530]],['Mine Adamantite rock']);
+{Soouth of Northern Rocks -- 1 inline}
+  self.Addy.Rock5 := TRSObject.Create(@map.walker,[1,1,2],[[8060,11542]],['Mine Adamantite rock']);
+{Soouth of Previous Rocks ==2 inline}
+  self.Addy.Rock6 := TRSObject.Create(@map.walker,[1,1,2],[[8052,11566]],['Mine Adamantite rock']);
+  self.Addy.Rock7 := TRSObject.Create(@map.walker,[1,1,2],[[8080,11566]],['Mine Adamantite rock']);
+{Soouthrn Most Rocks==1 inline}
+  self.Addy.Rock8 := TRSObject.Create(@map.walker,[1,1,2],[[8056,11578]],['Mine Adamantite rock']);
+{Same AS Above But For Depleted Rocks}
+  self.Addy.Depleted.Rock1 := TRSObject.Create(@map.walker,[1,1,2],[[8024,11530]],['Mine Rocks']);
+  self.Addy.Depleted.Rock1.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Addy.Depleted.Rock2 := TRSObject.Create(@map.walker,[1,1,2],[[8048,11530]],['Mine Rocks']);
+  self.Addy.Depleted.Rock2.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Addy.Depleted.Rock3 := TRSObject.Create(@map.walker,[1,1,2],[[8088,11526]],['Mine Rocks']);
+  self.Addy.Depleted.Rock3.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Addy.Depleted.Rock4 := TRSObject.Create(@map.walker,[1,1,2],[[8092,11530]],['Mine Rocks']);
+  self.Addy.Depleted.Rock4.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+{Soouth of Northern Rocks -- 1 inline}
+  self.Addy.Depleted.Rock5 := TRSObject.Create(@map.walker,[1,1,2],[[8060,11542]],['Mine Rocks']);
+  self.Addy.Depleted.Rock5.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+{Soouth of Previous Rocks ==2 inline}
+  self.Addy.Depleted.Rock6 := TRSObject.Create(@map.walker,[1,1,2],[[8052,11566]],['Mine Rocks']);
+  self.Addy.Depleted.Rock6.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Addy.Depleted.Rock7 := TRSObject.Create(@map.walker,[1,1,2],[[8080,11566]],['Mine Rocks']);
+  self.Addy.Depleted.Rock7.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+{Soouthrn Most Rocks==1 inline}
+  self.Addy.Depleted.Rock8 := TRSObject.Create(@map.walker,[1,1,2],[[8056,11578]],['Mine Rocks']);
+  self.Addy.Depleted.Rock8.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+//Showontarget (self.addy.rock3);
+end;
+
+(*
+## MiningGuild.MainInit;
+```pascal
+procedure TRSMiningGuild.MainInit;
+```
+This Set's up all items and rock information. Recommended Calling on this first.
+
+Example
+```pascal
+ {$I Wasplib/osrs.simba}
+
+ begin
+  MiningGuild.MainInit
+ end;
+*)
+
+procedure TRSMiningGuild.MainInit;
+begin
+   self.MapInit;
+   self.IronRockInit;
+   self.AddyRockInit;
+end;
+
+(*
+## MiningGuild.Bank;
+```pascal
+function TRSMiningGuild.Bank(BankObj:TRSObject): Boolean;
+```
+This opens either bank chest or deposit box depending on parameters used.
+
+Example
+```pascal
+ {$I Wasplib/osrs.simba}
+
+ begin
+  MiningGuild.Bank(MiningGuild.BankChest);
+  //or
+  // MiningGuild.Bank(MiningGuild.DepositBox);
+ end;
+*)
+
+function TRSMiningGuild.Bank(BankObj:TRSObject): Boolean;
+begin
+  Result:=(BankObj.WalkClick(True,1)=True);
+end;
+
+(*
+## MiningGuild.FillCoalBag;
+```pascal
+function TRSMiningGuild.FillCoalBag: Boolean;
+```
+Function that fills the coal bag with coal.
+
+Example
+```pascal
+ {$I Wasplib/osrs.simba}
+
+ begin
+  MiningGuild.FillCoalBag;
+ end;
+*)
+
+function TRSMiningGuild.FillCoalBag:Boolean;
+begin
+  Result:= (Inventory.Items.Interact (self.CoalBag,'Fill Coal bag')=True);
+end;
+
+(*
+## MiningGuild.Mine;
+```pascal
+function TRSMiningGuild.Mine(Rock:TRSObject):Boolean;
+```
+Function that will mine any rock you choose. Use the parameters with this formula:
+MiningGuild.ROCK_TYPE.ROCK_NUMBER.
+
+Example
+```pascal
+ {$I Wasplib/osrs.simba}
+
+ begin
+  MiningGuild.MainInit
+  MiningGuild.Mine(MiningGuild.Iron.Rock1);
+  //or
+  //MiningGuild.Mine(MiningGuild.Addy.Rock1);
+ end;
+*)
+
+function TRSMiningGuild.Mine(Rock:TRSObject):Boolean;
+begin
+  rock.walkclick(true,1);
+  Result:=True;
+end;
+
+(*
+## MiningGuild.DropOre;
+```pascal
+function TRSMiningGuild.DropOre(Ore:TRSItemArray):Boolean;
+```
+Function used to drop ores and any items in your inventory you wish. Just add whatever you want to drop to the parameter array.
+
+Example
+```pascal
+ {$I Wasplib/osrs.simba}
+
+ begin
+  MiningGuild.DropOre(['Iron ore','Uncut sapphire']); //For multiple items
+  //or
+  MiningGuild.DropOre(['Iron ore']); //For Single Items
+ end;
+*)
+
+function TRSMiningGuild.DropOre(Ore:TRSItemArray):Boolean;
+ var
+  slot: Integer;
+  slots: TIntegerArray;
+begin
+  Inventory.Items.FindAll(Ore, slots);
+
+  for slot in slots do
+  begin
+    Inventory.Slots.Interact(slot, 'Drop');
+  Sleep(60, 200);
+  end;
+  result:=True;
+end;
+
+
+var
+MiningGuild:TRSMiningGuild;   
