@@ -1,4 +1,3 @@
-```pascal
 {$INCLUDE_ONCE WaspLib/osrs.simba}
 type
   ERockID = enum    //Enum For Each Rock.
