@@ -1,10 +1,4 @@
 {$INCLUDE_ONCE WaspLib/osrs.simba}
-type
-  ERockID = enum    //Enum For Each Rock.
-   (IRON1,IRON2,IRON3,IRON4,IRON5,IRON6,
-    ADDY1,ADDY2,ADDY3,ADDY4,ADDY5,ADDY6,ADDY7,ADDY8
-   );
-
   TRSMiningGuild = record
     BankChest,DepositBox:TRSObject;
     CoalBag:TRSItem;
@@ -108,7 +102,7 @@ begin
   self.Addy.Depleted.Rock7.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
 {Soouthrn Most Rocks==1 inline}
   self.Addy.Depleted.Rock8 := TRSObject.Create(@map.walker,[1,1,2],[[8056,11578]],['Mine Rocks']);
-  self.Addy.Depleted.Rock4.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
+  self.Addy.Depleted.Rock8.Finder.Colors += [$616167, 0.000, EColorSpace.RGB, [1.000, 1.000, 1.000]];
 //Showontarget (self.addy.rock3);
 end;
 (*
@@ -128,7 +122,7 @@ Example
 *)
 procedure TRSMiningGuild.MainInit;
 begin
-   Self.MapInit;
+   self.MapInit;
    self.IronRockInit;
    self.AddyRockInit;
 end;
@@ -194,6 +188,7 @@ Example
 function TRSMiningGuild.Mine(Rock:TRSObject):Boolean;
 begin
   rock.walkclick(true,1);
+  Result:=True;
 end;
 (*
 ## MiningGuild.DropOre;
@@ -228,4 +223,4 @@ begin
 end;
 
 var
-MiningGuild:TRSMiningGuild;                               
+MiningGuild:TRSMiningGuild;                 
