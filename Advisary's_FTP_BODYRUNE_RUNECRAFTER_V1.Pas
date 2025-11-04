@@ -5,10 +5,12 @@
 ********INSTRUCTIONS***********
 #1- Equip Body Tiara, Withdraw 1 energy pot, And Fill Inventory With Pure Ess
 #2- Start anywhere near Edgeville Bank.
+#3 - Putting Pure Essence and Energy Potions (4) in top left slots of bank greatly improves effeciency.
 
-Recommended: Set Run TO Auto Toggle on above 1 Energy. Search RS settings for 'Run'.
-Has been tested on Runelite Fixed Classic.
-I used ANTIBAN alot in this script. So if you worried about back to back rest and sleeps, disable them with Startup GUI.
+************TIPS****************
+Setting Up Antiban: Sometimes antiban will glitch the bot. I suggest only 1 or 2 tasks set to 3% varaince.
+
+sleeps and breaks can be seasoned to taste.
 }
 const
   MAX_RUNTIME_MINUTES = 360;
@@ -16,8 +18,10 @@ Type
   EBodyStates=enum(
     BANKING_TRANSACTION,
     WALK_TO_AND_ENTER_RUINS,
-    CRAFT_RUNES_AND_EXIT,
-    WALK_TO_BANK_AND_OPEN
+    CRAFT_RUNES,
+    EXIT_ALTER,
+    WALK_TO_BANK,
+    OPEN_BANK
   );
   EEnergyPotionStates=enum(
     CONSUMABLE,
@@ -34,7 +38,7 @@ Type
     Tab: TLazTabSheet;
   end;
 
-procedure TBody.MapInit;
+procedure TBody.MapInit;//inits map and tpoints
 begin
   Map.Setup([Chunk(Box(46,55,50,52), 0)]);//Loads mainland map
   Map.Add([Chunk(Box(39,75,39,75), 0)]); //Loads Alter Area
@@ -44,7 +48,7 @@ begin
   self.AlterExit :=[5996,31066];
 end;
 
-procedure TBody.ObjectInit;
+procedure TBody.ObjectInit; //inits object information
 begin
 self.RuinsObj:= TRSObject.Create(@map.walker,[2,2,4],[[8116,36650]],['Enter Mysterious ruins']);
 self.RuinsObj.Finder.Colors +=[$535D51, 1, EColorSpace.RGB, [1.000, 1.000, 1.000]];
@@ -62,7 +66,7 @@ self.BankBoothObj.Finder.Colors += [$5F6264, 0.000, EColorSpace.RGB, [1.000, 1.0
 //showontarget(self.ExitObj);
 end;
 
-procedure TBody.ItemsInit;
+procedure TBody.ItemsInit;  //Inits all the different items.
 begin
  self.PEssence := new TRSBankItem('Pure essence', -1);
  self.REssence := new TRSBankItem('Rune essence', -1);
@@ -81,21 +85,21 @@ begin
 
  self.ExitArray:=['Pure essence','Body rune'];
 end;
-procedure TBody.SetupAntiBan;
+procedure TBody.SetupAntiBan;  //sets up antiban form
 begin
   self.Form.Setup();
   self.form.CreateAntibanTab();
   self.form.Run();
 end;
-procedure TBody.MainInit;
+procedure TBody.MainInit;  //main init file
 begin
   self.MapInit;
   self.ObjectInit;
   self.ItemsInit;
 end;
-function TBody.ShouldDrinkEnergy:Boolean;
+function TBody.ShouldDrinkEnergy:Boolean; //Helper function. Changing the number higher will consume more energy pots per trip
 begin
-  If minimap.GetLevel(ERSMinimapOrb.ENERGY) <80 then
+  If minimap.GetLevel(ERSMinimapOrb.ENERGY) <75 then
   Result:=True;
 end;
 
@@ -106,7 +110,7 @@ begin
   exit(EEnergyPotionStates.EMPTY);
 end;
 
-procedure TBody.DrinkPotion;
+procedure TBody.DrinkPotion; //procedure that drinks the different energy pot.
 begin
  If Inventory.Items.ContainsAny(self.potionarray) and self.ShouldDrinkEnergy=True then
   Inventory.Items.Click(self.EnergyPotion1) or
@@ -116,58 +120,60 @@ begin
   Exit;
  end;
 
-procedure TBody.WalkToRuins;
+procedure TBody.WalkToRuins; //Helper Procedure To Walk TO Ruins
 begin
   Writeln 'Walking To Ruins';
   self.DrinkPotion;
-  Antiban.DoAntiban();
-  map.walker.webwalk(self.RuinsPoint,10,0.60,false);
-  sleepuntil((minimap.isplayermoving=False),150,2000);
+  Map.Walker.Webwalk(self.RuinsPoint,4,0.90,false);
+  Sleepuntil((Minimap.IsPlayerMoving=False),150,2000);
   Writeln 'Exiting WalkToRuins';
 end;
 
-procedure TBody.EnterRuins;
+procedure TBody.EnterRuins;//Enters The Ruins
 begin
   self.DrinkPotion;
   Writeln 'Attempting To Enter Ruins';
   self.RuinsObj.Click(True,10);
-  sleepuntil ((Map.Walker.Inrange(self.AlterExit,150)),150,6000);
+  Sleepuntil ((Map.Walker.Inrange(self.AlterExit,150)),150,6000);
   writeln 'Exiting EnterRuins';
 end;
 
-procedure TBody.ExitAlter;
+procedure TBody.ExitAlter; //Exits The Body Alter
 begin
   self.ExitObj.Click(True,10);
-  sleepuntil ((Map.Walker.Inrange(self.RuinsPoint,150)),150,6000);
+  Sleepuntil ((Map.Walker.Inrange(self.RuinsPoint,150)),150,6000);
 end;
 
-procedure TBody.CraftRunes;
+procedure TBody.CraftRunes;  //Crafts runes after entering mysterious ruins.
 begin
   writeln 'Walking TO alter, Then Crafting';
   self.AlterObj.Click(True,10);
-  sleepuntil((minimap.isplayermoving=False),2000,10000);
-  self.ExitAlter;
+  Sleepuntil((Minimap.IsPlayerMoving=False),2000,10000);
 end;
 
-procedure TBody.WalkBackToBank;
+procedure TBody.WalkBackToBank;//walks back to the bank
 begin
-  sleepuntil((map.walker.inrange(self.RuinsPoint,250)),1000,5000);
+  SleepUntil((Map.Walker.Inrange(self.RuinsPoint,250)),1000,5000);
   self.DrinkPotion;
-  map.walker.webwalk(self.BankBoothPoint,8,0.60,False);
-  sleepuntil((minimap.isplayermoving=False),250,10000);
+  Map.Walker.Webwalk(self.BankBoothPoint,4,0.90,False);
+  SleepUntil((Minimap.IsPlayerMoving=False),250,10000);
   self.DrinkPotion;
-  bank.open(self.BankBoothObj,true);
-  sleepuntil((bank.isopen=True),500,10000);
-
+  AntiBan.DoAntiban;
 end;
 
-procedure TBody.FindRuins;
+procedure TBody.OpenBank;//opens bank after getting close to bank.
+begin
+Bank.Open(self.BankBoothObj,true);
+sleepuntil((Bank.IsOpen=True),500,10000);
+end;
+
+procedure TBody.FindRuins; //walks from bank to ruins; then enters ruins. Combines two procedures from earlier
 begin
  self.WalkToRuins;
  self.EnterRuins;
 end;
 
-procedure TBody.BankTransaction;
+procedure TBody.BankTransaction; //Navigates bank transactions.. Doesn't open bank, only closes
 begin
   if Inventory.Items.Contains ('Vial') then
   Bank.Deposit(self.Vial,True);
@@ -176,24 +182,28 @@ begin
   Bank.Withdraw(self.Potion,True,True,True);
 
   Bank.Deposit(self.Rune,True);
-  Bank.withdraw(self.PEssence,True,True,True);
+  Bank.Withdraw(self.PEssence,True,True,True);
   Bank.Close(False);
   self.DrinkPotion;
 end;
 
-function TBody.AssignStates: EBodyStates;
+function TBody.AssignStates: EBodyStates; //Assigns criteria to determine states
 begin
-  If Inventory.Items.ContainsAny(self.ExitArray) and map.walker.inrange(self.AlterExit,120) then
-  exit(EBodyStates.CRAFT_RUNES_AND_EXIT);
-    If Bank.IsOpen and Inventory.Items.Contains ('Body rune') and map.walker.inrange(self.BankBoothPoint,4) then
-    exit(EBodyStates.BANKING_TRANSACTION);
-      If not Bank.IsOpen and Inventory.Items.Contains ('Pure essence') and not map.walker.inrange(self.AlterExit,120) then
-      exit(EBodyStates.WALK_TO_AND_ENTER_RUINS);
-        If not map.walker.inrange(self.BankBoothPoint,20) and Inventory.Items.Contains ('Body rune') and not Bank.IsOpen and not map.walker.inrange(self.AlterExit,120) then
-        exit(EBodyStates.WALK_TO_BANK_AND_OPEN);
+  If Inventory.Items.Contains('Pure essence') and map.walker.inrange(self.AlterExit,120) then
+  exit(EBodyStates.CRAFT_RUNES);
+    If Inventory.Items.Contains('Body rune') and map.walker.inrange(self.AlterExit,120) then
+    exit(EBodyStates.EXIT_ALTER);
+      If Bank.IsOpen and Inventory.Items.Contains ('Body rune') and map.walker.inrange(self.BankBoothPoint,4) then
+      exit(EBodyStates.BANKING_TRANSACTION);
+        If not Bank.IsOpen and Inventory.Items.Contains ('Pure essence') and not map.walker.inrange(self.AlterExit,120) then
+        exit(EBodyStates.WALK_TO_AND_ENTER_RUINS);
+          If not map.walker.inrange(self.BankBoothPoint,20) and Inventory.Items.Contains ('Body rune') and not Bank.IsOpen and not map.walker.inrange(self.AlterExit,120) then
+          exit(EBodyStates.WALK_TO_BANK);
+             If map.walker.inrange(self.BankBoothPoint,19) and Inventory.Items.Contains ('Body rune') and not Bank.IsOpen and not map.walker.inrange(self.AlterExit,120) then
+             exit(EBodyStates.OPEN_BANK);
 end;
 
-procedure TBody.MainRun;
+procedure TBody.MainRun; //Uses previous function to link states to 1 to 1 actions.
   var
   action: EBodyStates;
 begin
@@ -204,9 +214,11 @@ begin
     WriteLn(action);
     case action of
       EBodyStates.WALK_TO_AND_ENTER_RUINS: self.FindRuins;
-      EBodyStates.CRAFT_RUNES_AND_EXIT: self.CraftRunes;
-      EBodyStates.WALK_TO_BANK_AND_OPEN:self.WalkBackToBank;
+      EBodyStates.CRAFT_RUNES: self.CraftRunes;
+      EBodyStates.EXIT_ALTER: self.ExitAlter;
+      EBodyStates.WALK_TO_BANK:self.WalkBackToBank;
       EBodyStates.BANKING_TRANSACTION:self.BankTransaction;
+      EBodyStates.OPEN_BANK:self.OpenBank;
     end;
   end;
 end;
@@ -215,7 +227,7 @@ end;
 var
 Run:TBody;
 begin
- // Run.SetupAntiBan;
+  Run.SetupAntiBan;
   Run.MainInit;
   Run.MainRun;
-end;      
+end;  
