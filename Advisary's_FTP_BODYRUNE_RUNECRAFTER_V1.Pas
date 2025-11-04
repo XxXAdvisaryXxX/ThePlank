@@ -10,6 +10,9 @@
 ************TIPS****************
 Setting Up Antiban: Sometimes antiban will glitch the bot. I suggest only 1 or 2 tasks set to 3% varaince.
 
+SETTINGS: Make sure to auto-toggle run between 5-15 energy. To do this: goto settings in RS. Click all settings.
+            use the settings search and search for 'ENERGY'.. Click the enable button and set to 5-15. 
+
 sleeps and breaks can be seasoned to taste.
 }
 const
