@@ -1,0 +1,111 @@
+{$I Wasplib/osrs.simba}
+{$I TRSHerblore.simba}
+type
+ EKwuarmStates= enum(
+ OPEN_BANK_AND_DEPOSIT,
+ WITHDRAW_ITEMS_CLOSE_BANK,
+ CLEAN_COMBINE
+ );
+ THerb = record
+    Actions, MaxTime, MaxActions, MaxLevel: UInt64;
+    FormSetting: Boolean;
+  end;
+
+procedure THerb.Init;
+begin
+ Map.Setup([ERSChunk.VARROCK]);
+end;
+
+procedure THerb.OpenBank;
+begin
+  bank.open;
+  bank.DepositInventory;
+end;
+
+procedure THerb.BankTransaction;
+begin
+  Herb.WithdrawForUnfinished('Grimy cadantine',True); //To change herb, just replace herb names. If herb is lowercased make sure you replace with lowercase.
+  Bank.Close(False);
+  sleepuntil ((not Bank.Isopen),25,1500);
+end;
+
+procedure THerb.CleanandCombine;
+begin
+  Herb.CleanHerbs(['Grimy cadantine']);//Change herb here. Make sure its lowercase.
+  Herb.MakeUnfinished('Cadantine'); //change herb name here. Make sure first letter is uppercase.
+end;
+
+function THerb.AssignStates:EKwuarmStates;
+begin
+  if Inventory.Items.Contains ('Vial of water') and Inventory.Items.Contains ('Grimy cadantine'{Replace here to change}) then
+  exit(EKwuarmStates.CLEAN_COMBINE);
+    if Inventory.Items.Count ('Cadantine potion (unf)'{Replace herb name. Make sure uppercase first letter})=14 then
+    exit (EKwuarmStates.OPEN_BANK_AND_DEPOSIT);
+      If Bank.IsOpen then
+      exit (EKwuarmStates.WITHDRAW_ITEMS_CLOSE_BANK);
+end;
+
+
+procedure THerb.MainRun; //Uses previous function to link states to 1 to 1 actions.
+  var
+  action: EKwuarmStates;
+
+begin
+ while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
+
+  begin
+    action := Self.AssignStates;
+    WriteLn(action);
+    case action of
+      EKwuarmStates.CLEAN_COMBINE:self.CleanandCombine;
+      EKwuarmStates.OPEN_BANK_AND_DEPOSIT:self.OpenBank;
+      EKwuarmStates.WITHDRAW_ITEMS_CLOSE_BANK:self.BankTransaction;
+    end;
+    Antiban.DoAntiban;
+  end;
+end;
+
+///////////////////////////////////FORM STUFF\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+var
+  Template: THerb;
+  TemplateForm: TScriptForm;
+  TemplateConfig: TConfigJSON;
+  FormCheckbox: TLazCheckBox;
+  HerbCombobox, ActionCombobox: TLazComboBox;
+
+procedure TScriptForm.Init();
+var
+  tab: TLazTabSheet;
+  panel: TLazPanel;
+  act: EHerbActions;
+  herbs:THerbType;
+begin
+  TemplateConfig.Setup('scripts' + PATH_SEP + 'my-script-name');
+
+  Self.Setup('My Script Name');
+
+  {tab := Self.CreateTab('My Script Name');
+  panel := Self.CreateGoals(tab, True, True, True, EOrientation.HORIZONTAL);
+  panel.Align := ELazAlign.Bottom;
+
+  HerbComboBox:= TLazComboBox.CreateEx(tab, 'Herb Type:', 'Choose Herb', 20, 100, 200);
+  for herbs in AVAILABLE_HERBS do
+    HerbComboBox.Items.Add(herbs.Grimy);
+  HerbComboBox.ItemIndex := 0;
+
+  ActionComboBox:= TLazComboBox.CreateEx(tab, 'Action:', 'Make Unfinished or Clean', 20, 160, 200);
+    ActionComboBox.Items.add(ACTIONS[0]);
+    ActionComboBox.Items.add(ACTIONS[1]);
+    ActionComboBox.ItemIndex:=0;}
+
+  Self.CreateAntibanTab();
+  Self.Run();
+end;
+
+ var
+ run:THerb;
+begin
+  TemplateForm.Init();
+  run.init;
+  run.MainRun;
+end. 
