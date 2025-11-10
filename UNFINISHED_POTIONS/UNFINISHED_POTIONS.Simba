@@ -28,8 +28,8 @@ procedure THerb.Init;
 begin
  Map.Setup([ERSChunk.VARROCK]);
 ////////////// //////////////////////// Change The Names Here To desired herb
- self.TargetGHerb:='Grimy cadantine';// Make sure you follow the format with uppercase and lowercase.
- self.TargetCHerb:='Cadantine';      // The first letter of every herb will be upper or lower case. Pay close attention
+ self.TargetGHerb:='Grimy lantadyme';// Make sure you follow the format with uppercase and lowercase.
+ self.TargetCHerb:='Lantadyme';      // The first letter of every herb will be upper or lower case. Pay close attention
 ///////////////////////////////////////
  self.TargetArray:= [self.TargetGHerb];
  self.Unf:= (self.TargetCHerb+'potion (unf)');
@@ -38,7 +38,10 @@ end;
 procedure THerb.OpenBank;
 begin
   bank.open;
+  sleepuntil ((bank.IsOpen),50,2000);
   bank.DepositInventory;
+    If inventory.items.contains(self.Unf) then
+    bank.DepositInventory;
 end;
 
 procedure THerb.BankTransaction;
@@ -105,4 +108,5 @@ begin
   TemplateForm.Init();
   run.init;
   run.MainRun;
-end.  
+end.
+         
