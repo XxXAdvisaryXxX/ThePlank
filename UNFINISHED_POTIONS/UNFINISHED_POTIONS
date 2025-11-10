@@ -1,3 +1,8 @@
+{
+ Works anywhere in Varrok. I prefer East Bank. West Bank causes strange bugs sometimes. GE can work, but effeciency will be lower on busy worlds.
+ Start With an Empty Inv and Let it Rip.
+ Having Vials and Herbs on the same bank tab will help speed up effenciency. 
+}
 {$I Wasplib/osrs.simba}
 {$I TRSHerblore.simba}
 type
