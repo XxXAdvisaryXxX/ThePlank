@@ -5,25 +5,26 @@ Items Needed: Grimy Herbs, Vials of Water
 Instructions for changing herb type.. Scroll down to the green /////// box in THerb.Init.
   -Read the instructions there. It's simple as changing two words.
 
-*Works at GE (Crowded GE's can cause glitches not reccomended)
+*Works at GE (Crowded GE's can cause glitches not recommended)
 *Varrok west bank. (Sometimes if you in stalls next to doors, it wants to open the door)
 *Varrok East Bank (Best Place to run in my opinion)
  }
 {$I Wasplib/osrs.simba}
 {$I TRSHerblore.simba}
 type
+//Enum used in assign states function. Youll never need to change these.
  EKwuarmStates= enum(
  OPEN_BANK_AND_DEPOSIT,
  WITHDRAW_ITEMS_CLOSE_BANK,
  CLEAN_COMBINE
  );
  THerb = record
-    Actions, MaxTime, MaxActions, MaxLevel: UInt64;
-    FormSetting: Boolean;
-    TargetGHerb,TargetCHerb,Unf:TRSItem;
-    TargetArray:TRSItemArray;
+    Actions, MaxTime, MaxActions, MaxLevel: UInt64; //Used for future forms.
+    FormSetting: Boolean; //used for future forms
+    TargetGHerb,TargetCHerb,Unf:TRSItem;//used for storing herb and potion TRSitem information below.
+    TargetArray:TRSItemArray;  //Used for a specific function within TRSHerblore
   end;
-
+{***********CHANGE HERBS BELOW*************}
 procedure THerb.Init;
 begin
  Map.Setup([ERSChunk.VARROCK]);
@@ -35,29 +36,29 @@ begin
  self.Unf:= (self.TargetCHerb+'potion (unf)');
 end;
 
-procedure THerb.OpenBank;
+procedure THerb.OpenBank;//opens the bank!
 begin
-  bank.open;
-  sleepuntil ((bank.IsOpen),50,2000);
-  bank.DepositInventory;
-    If inventory.items.contains(self.Unf) then
-    bank.DepositInventory;
+  Bank.open;
+  Sleepuntil ((bank.IsOpen),50,2000);
+  Bank.DepositInventory;
+    If Inventory.Items.Contains(self.Unf) then
+    Bank.DepositInventory;
 end;
 
-procedure THerb.BankTransaction;
+procedure THerb.BankTransaction;//Uses procedures from imported library to quickly make bank transactions!
 begin
   Herb.WithdrawForUnfinished(self.TargetGHerb,True);
   Bank.Close(False);
-  sleepuntil ((not Bank.Isopen),25,1500);
+  Sleepuntil ((not Bank.Isopen),25,1500);
 end;
 
-procedure THerb.CleanandCombine;
+procedure THerb.CleanandCombine; //Uses Procedures from imported library to quickly Cleans and combines herbs ingame.
 begin
   Herb.CleanHerbs(self.TargetArray);
   Herb.MakeUnfinished(self.TargetCHerb);
 end;
 
-function THerb.AssignStates:EKwuarmStates;
+function THerb.AssignStates:EKwuarmStates; //Assigns Enums For THerb.MainRun
 begin
   if Inventory.Items.Contains ('Vial of water') and Inventory.Items.Contains (self.TargetGHerb) then
   exit(EKwuarmStates.CLEAN_COMBINE);
@@ -68,7 +69,7 @@ begin
 end;
 
 
-procedure THerb.MainRun; //Uses previous function to link states to 1 to 1 actions.
+procedure THerb.MainRun; //Uses previous function to link states to 1 to 1 actions. Has antiban after every state change.
   var
   action: EKwuarmStates;
 
@@ -88,25 +89,24 @@ begin
 end;
 
 ///////////////////////////////////FORM STUFF\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-  Var
+Var
   TemplateForm: TScriptForm;
   TemplateConfig: TConfigJSON;
-procedure TScriptForm.Init();
 
+procedure TScriptForm.Init();
 begin
   TemplateConfig.Setup('scripts' + PATH_SEP + 'my-script-name');
 
-  Self.Setup('My Script Name');
+  Self.Setup('DEGRIME AND MAKE UNFINISHED POTIONS');
 
   Self.CreateAntibanTab();
   Self.Run();
 end;
-
+//////Final Run Loop
  var
  run:THerb;
 begin
   TemplateForm.Init();
   run.init;
   run.MainRun;
-end.
-         
+end.    
