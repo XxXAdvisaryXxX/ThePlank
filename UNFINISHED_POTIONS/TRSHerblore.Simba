@@ -2,18 +2,6 @@
 const
   MAX_RUNTIME_MINUTES = 360;
 type
-  EHerbActions =enum(
-   CLEAN,COMBINE
-  );
-
-  ECleanHerbs = enum(
-  GUAM,KWUARM
-  );
-
-  EDirtyHerbs = enum(
-  GUAM,KWUARM
-  );
-
   THerbType=Record
     Grimy,Clean:TRSItem;
   end;
@@ -53,22 +41,6 @@ type
       end;
   end;
 
-procedure TRSHerb.ItemInit;//inits herb items. Helps build herb bank items later down the line!
-begin
-  self.Grimy.Kwuarm:= 'Grimy kwuarm';
-  self.Clean.Kwuarm:= 'Kwuarm';
-end;
-
-procedure TRSHerb.BankItemInit;//inits herb items. Helps build herb bank items later down the line!
-begin
-
-end;
-
-procedure TRSHerb.MainInit;
-begin
-
-end;
-
 function TRSHerb.IsItemDepleted(Item:TRSItem):boolean;
 begin
   if Inventory.Items.Count(Item)<1 then
@@ -99,17 +71,6 @@ begin
   sleep(1200,1402);
   Keyboard.KeyPress(EKeyCode.NUM_1);
   sleepuntil((self.IsItemDepleted(Herb)=True),3000,10000);
-end;
-
-procedure TRSHerb.MakeUnfinished(const Herb:THerbType);overload;
-var
-vial:TRSItem;
-begin
-  vial:='Vial of water';
-  Inventory.Combine(Herb.Clean,vial);
-  sleep(700,900);
-  Keyboard.KeyPress(EKeyCode.NUM_1);
-  sleepuntil((self.IsItemDepleted(Herb.Clean)=True),5000,15000);
 end;
 
 procedure TRSHerb.WithdrawForUnfinished(Herb:TRSItem;Vials:Boolean);
