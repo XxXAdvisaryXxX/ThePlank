@@ -1,8 +1,12 @@
 {
- Works anywhere in Varrok. I prefer East Bank. West Bank causes strange bugs sometimes. GE can work, but effeciency will be lower on busy worlds.
- Start With an Empty Inv and Let it Rip.
- Having Vials and Herbs on the same bank tab will help speed up effenciency. 
-}
+-------------Makes Unfinished Potions From Grimy Herbs----------
+Items Needed: Grimy Herbs, Vials of Water
+
+Instructions for changing herb type.. Scroll down to the green /////// box.
+  -Read the instructions there. It's simple as changing two words.
+
+Works at GE and any bank in varrok. Start with empty inventory and near banks or ge.
+ }
 {$I Wasplib/osrs.simba}
 {$I TRSHerblore.simba}
 type
@@ -14,11 +18,19 @@ type
  THerb = record
     Actions, MaxTime, MaxActions, MaxLevel: UInt64;
     FormSetting: Boolean;
+    TargetGHerb,TargetCHerb,Unf:TRSItem;
+    TargetArray:TRSItemArray;
   end;
 
 procedure THerb.Init;
 begin
  Map.Setup([ERSChunk.VARROCK]);
+////////////// //////////////////////// Change The Names Here To desired herb
+ self.TargetGHerb:='Grimy cadantine';// Make sure you follow the format with uppercase and lowercase.
+ self.TargetCHerb:='Cadantine';      // The first letter of every herb will be upper or lower case. Pay close attention
+///////////////////////////////////////
+ self.TargetArray:= [self.TargetGHerb];
+ self.Unf:= (self.TargetCHerb+'potion (unf)');
 end;
 
 procedure THerb.OpenBank;
@@ -29,22 +41,22 @@ end;
 
 procedure THerb.BankTransaction;
 begin
-  Herb.WithdrawForUnfinished('Grimy cadantine',True); //To change herb, just replace herb names. If herb is lowercased make sure you replace with lowercase.
+  Herb.WithdrawForUnfinished(self.TargetGHerb,True);
   Bank.Close(False);
   sleepuntil ((not Bank.Isopen),25,1500);
 end;
 
 procedure THerb.CleanandCombine;
 begin
-  Herb.CleanHerbs(['Grimy cadantine']);//Change herb here. Make sure its lowercase.
-  Herb.MakeUnfinished('Cadantine'); //change herb name here. Make sure first letter is uppercase.
+  Herb.CleanHerbs(self.TargetArray);
+  Herb.MakeUnfinished(self.TargetCHerb);
 end;
 
 function THerb.AssignStates:EKwuarmStates;
 begin
-  if Inventory.Items.Contains ('Vial of water') and Inventory.Items.Contains ('Grimy cadantine'{Replace here to change}) then
+  if Inventory.Items.Contains ('Vial of water') and Inventory.Items.Contains (self.TargetGHerb) then
   exit(EKwuarmStates.CLEAN_COMBINE);
-    if Inventory.Items.Count ('Cadantine potion (unf)'{Replace herb name. Make sure uppercase first letter})=14 then
+    if Inventory.Items.Count (self.Unf)=14 then
     exit (EKwuarmStates.OPEN_BANK_AND_DEPOSIT);
       If Bank.IsOpen then
       exit (EKwuarmStates.WITHDRAW_ITEMS_CLOSE_BANK);
@@ -71,37 +83,15 @@ begin
 end;
 
 ///////////////////////////////////FORM STUFF\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-var
-  Template: THerb;
+  Var
   TemplateForm: TScriptForm;
   TemplateConfig: TConfigJSON;
-  FormCheckbox: TLazCheckBox;
-  HerbCombobox, ActionCombobox: TLazComboBox;
-
 procedure TScriptForm.Init();
-var
-  tab: TLazTabSheet;
-  panel: TLazPanel;
-  act: EHerbActions;
-  herbs:THerbType;
+
 begin
   TemplateConfig.Setup('scripts' + PATH_SEP + 'my-script-name');
 
   Self.Setup('My Script Name');
-
-  {tab := Self.CreateTab('My Script Name');
-  panel := Self.CreateGoals(tab, True, True, True, EOrientation.HORIZONTAL);
-  panel.Align := ELazAlign.Bottom;
-
-  HerbComboBox:= TLazComboBox.CreateEx(tab, 'Herb Type:', 'Choose Herb', 20, 100, 200);
-  for herbs in AVAILABLE_HERBS do
-    HerbComboBox.Items.Add(herbs.Grimy);
-  HerbComboBox.ItemIndex := 0;
-
-  ActionComboBox:= TLazComboBox.CreateEx(tab, 'Action:', 'Make Unfinished or Clean', 20, 160, 200);
-    ActionComboBox.Items.add(ACTIONS[0]);
-    ActionComboBox.Items.add(ACTIONS[1]);
-    ActionComboBox.ItemIndex:=0;}
 
   Self.CreateAntibanTab();
   Self.Run();
@@ -113,4 +103,4 @@ begin
   TemplateForm.Init();
   run.init;
   run.MainRun;
-end. 
+end.  
