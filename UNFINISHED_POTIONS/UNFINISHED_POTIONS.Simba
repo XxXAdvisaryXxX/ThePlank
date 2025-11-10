@@ -2,10 +2,12 @@
 -------------Makes Unfinished Potions From Grimy Herbs----------
 Items Needed: Grimy Herbs, Vials of Water
 
-Instructions for changing herb type.. Scroll down to the green /////// box.
+Instructions for changing herb type.. Scroll down to the green /////// box in THerb.Init.
   -Read the instructions there. It's simple as changing two words.
 
-Works at GE and any bank in varrok. Start with empty inventory and near banks or ge.
+*Works at GE (Crowded GE's can cause glitches not reccomended)
+*Varrok west bank. (Sometimes if you in stalls next to doors, it wants to open the door)
+*Varrok East Bank (Best Place to run in my opinion)
  }
 {$I Wasplib/osrs.simba}
 {$I TRSHerblore.simba}
