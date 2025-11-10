@@ -144,29 +144,9 @@ begin
  self.MakeUnfinished('Kwuarm');
 end;
 
-function TRSHerb.AssignStates:EHerbActions;
-begin
-
-end;
-
-procedure TRSHerb.MainRun; //Uses previous function to link states to 1 to 1 actions.
-  var
-  action: EHerbActions;
-begin
- while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
-
-  begin
-    action := Self.AssignStates;
-    WriteLn(action);
-    case action of
-
-    end;
-  end;
-end;
-
  var
  Herb:TRSHerb;
 
  begin
 
- end;
+ end;  
