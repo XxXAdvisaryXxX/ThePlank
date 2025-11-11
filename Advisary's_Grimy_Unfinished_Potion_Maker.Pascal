@@ -10,7 +10,6 @@ Instructions for changing herb type.. Scroll down to the green /////// box in TH
 *Varrok East Bank (Best Place to run in my opinion)
  }
 {$I Wasplib/osrs.simba}
-//{$I TRSHerblore.simba}
 const
   MAX_RUNTIME_MINUTES = 360;
 type
