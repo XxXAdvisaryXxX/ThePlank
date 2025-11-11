@@ -1,4 +1,0 @@
-You must make sure both simba files are in the same folder. TRSHerblore is the library which youll never have to open. Open the UnFinished Potion Script To run the script.
-
-  -It's setup by defualt to withdraw 14 grimy cadantine, and 14 vials. It cleans the herbs and makes unfinished poition.
-  - Setup for easily changing the herb type by changing 4 or 5 parameters in the script itself. Check the script to do this. I leave good comments. 
