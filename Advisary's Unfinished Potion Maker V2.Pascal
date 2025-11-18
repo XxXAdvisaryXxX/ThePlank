@@ -5,7 +5,7 @@ Items Needed: Grimy Herbs, Vials of Water
 Default Values: Will Enter Restock Phase when grimy herbs in bank fall below 500.
   Will buy 4k herbs at a time. This can be changed below in THerb.Init. Check comments. Will also sell any unfinished potions.
 
-Instructions for changing herb type.. Scroll down to the green /////// box in THerb.Init.
+Instructions for changing herb type.. Scroll down to the /////// box in THerb.Init.
   -Read the instructions there. It's simple as changing two words.
 
 *Works at GE (Crowded GE's can cause glitches not recommended)
@@ -76,9 +76,9 @@ procedure THerb.Init;
 begin
   Map.Setup([ERSChunk.VARROCK]);
 ////////////// //////////////////////// Change The Names Here To desired herb
-  self.TargetGHerb:='Grimy torstol';// Make sure you follow the format with uppercase and lowercase.
-  self.TargetCHerb:='Torstol';      // The first letter of every herb will be upper or lower case. Pay close attention
-///////////////////////////////////////
+{Here}  self.TargetGHerb:='Grimy torstol';// Make sure you follow the format with uppercase and lowercase. Change the words inside the quotes and leave the semicolons.
+{Here}  self.TargetCHerb:='Torstol';      // The first letter of every herb will be upper or lower case. Pay close attention
+///////////////////////////////////////////
   self.TargetArray:= [self.TargetGHerb];
   self.Unf:= (self.TargetCHerb+' potion (unf)');
   self.NotedUnf:=('noted '+self.TargetCHerb+' potion (unf)');
@@ -87,7 +87,7 @@ begin
   self.Restock.UnfinishedBankItem.Noted:=True;
 
   self.Restock.BuyVialQuant:= 6000;
-  self.Restock.BuyHerbQuant :=4000; //Change This to the number of Grimy Herbs wish to buy.
+{Here}self.Restock.BuyHerbQuant :=4000; //Change This to the number of Grimy Herbs wish to buy.
 
   self.Restock.SellPrice :=Itemdata.GetPrice(self.Unf);   //How Much To Sell Unfinished For
   self.Restock.BuyPrice := Itemdata.GetPrice(self.TargetGHerb);//How Much To Buy Grimy Herbs For
