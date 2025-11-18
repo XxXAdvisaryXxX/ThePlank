@@ -8,9 +8,10 @@ Default Values: Will Enter Restock Phase when grimy herbs in bank fall below 500
 Instructions for changing herb type.. Scroll down to the /////// box in THerb.Init.
   -Read the instructions there. It's simple as changing two words.
 
-*Works at GE (Crowded GE's can cause glitches not recommended)
-*Varrok west bank. (Sometimes if you in stalls next to doors, it wants to open the door)
-*Varrok East Bank (Best Place to run in my opinion)
+*Runs To GE to Buy Herbs.
+*Runs To Varrok East Bank To Degrime and clean.
+
+WARNING: When setting antiban, do not use random bank or anything that does random things to bank interface. They will ruin cached numbers. 
  }
 {$I Wasplib/osrs.simba}
 const
