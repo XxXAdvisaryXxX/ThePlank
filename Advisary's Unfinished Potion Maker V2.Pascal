@@ -3,7 +3,7 @@
 Items Needed: Grimy Herbs, Vials of Water
 
 Default Values: Will Enter Restock Phase when grimy herbs in bank fall below 500.
-  Will buy 4k herbs at a time. This can be changed below in THerb.Init. Check comments. Will also sell any unfinished potions.
+  Will buy 3k herbs at a time. This can be changed below in THerb.Init. Check comments. Will also sell any unfinished potions.
 
 Instructions for changing herb type.. Scroll down to the /////// box in THerb.Init.
   -Read the instructions there. It's simple as changing two words.
@@ -11,7 +11,7 @@ Instructions for changing herb type.. Scroll down to the /////// box in THerb.In
 *Runs To GE to Buy Herbs.
 *Runs To Varrok East Bank To Degrime and clean.
 
-WARNING: When setting antiban, do not use random bank or anything that does random things to bank interface. They will ruin cached numbers. 
+WARNING: When setting antiban, do not use random bank or anything that does random things to bank interface. They will ruin cached numbers.
  }
 {$I Wasplib/osrs.simba}
 const
@@ -29,7 +29,8 @@ type
     BUY_HERBS,
     BUY_VIALS,
     SELL_POTIONS,
-    WALK_TO_GE
+    WALK_TO_GE,
+    EXIT_RESTOCK
   );
  THerb = record
     Actions, MaxTime, MaxActions, MaxLevel: UInt64; //Used for future forms.
@@ -75,11 +76,12 @@ end;
 {***********CHANGE HERBS BELOW*************}
 procedure THerb.Init;
 begin
+  RSClient.DisableRealInput;
   Map.Setup([ERSChunk.VARROCK]);
 ////////////// //////////////////////// Change The Names Here To desired herb
-{Here}  self.TargetGHerb:='Grimy torstol';// Make sure you follow the format with uppercase and lowercase. Change the words inside the quotes and leave the semicolons.
-{Here}  self.TargetCHerb:='Torstol';      // The first letter of every herb will be upper or lower case. Pay close attention
-///////////////////////////////////////////
+  self.TargetGHerb:='Grimy torstol';// Make sure you follow the format with uppercase and lowercase.
+  self.TargetCHerb:='Torstol';      // The first letter of every herb will be upper or lower case. Pay close attention
+///////////////////////////////////////
   self.TargetArray:= [self.TargetGHerb];
   self.Unf:= (self.TargetCHerb+' potion (unf)');
   self.NotedUnf:=('noted '+self.TargetCHerb+' potion (unf)');
@@ -88,7 +90,7 @@ begin
   self.Restock.UnfinishedBankItem.Noted:=True;
 
   self.Restock.BuyVialQuant:= 6000;
-{Here}self.Restock.BuyHerbQuant :=4000; //Change This to the number of Grimy Herbs wish to buy.
+  self.Restock.BuyHerbQuant :=3000; //Change This to the number of Grimy Herbs wish to buy.
 
   self.Restock.SellPrice :=Itemdata.GetPrice(self.Unf);   //How Much To Sell Unfinished For
   self.Restock.BuyPrice := Itemdata.GetPrice(self.TargetGHerb);//How Much To Buy Grimy Herbs For
@@ -181,7 +183,7 @@ end;
 
 procedure THerb.OpenBank;//opens bank and makes sure things are withdrawn properly.
 begin
-  if not Map.Walker.Inrange(Self.BankPoint,20) then Map.Walker.Webwalk(self.BankPoint,4,0,False);
+  if not Map.Walker.Inrange(Self.BankPoint,35) then Map.Walker.Webwalk(self.BankPoint,4,0,False);
   Bank.open(True);
   Sleepuntil ((bank.IsOpen),50,2000);
   Self.BankCount;
@@ -220,6 +222,7 @@ begin
     Sleep(5000,7000);
     GrandExchangeoffer.CreateBuyOffer(self.TargetGHerb,self.Restock.BuyPrice,self.Restock.BuyHerbQuant);
     Sleep(5000,6000);
+    self.BankCountCache[0]:= (self.BanKCountCache[0]+self.Restock.BuyHerbQuant);
     self.Collect;
     Bank.Open;
     self.BankCount;
@@ -241,8 +244,10 @@ procedure THerb.SellUnfinished;
 var
   i:Integer;
 begin
+  if not Map.Walker.Inrange(self.GEPoint,30) then self.WalkToGE;
   Bank.Open;
   Sleepuntil ((bank.IsOpen),50,8000);
+  self.BankCount;
   Bank.Withdraw(self.Restock.UnfinishedBankItem,True,True,True);
   Bank.Close(False);
   Sleep (400,600);
@@ -259,9 +264,13 @@ begin
       Sleep(3000,4000);
       GrandExchangeOffer.Confirm;
       Sleep(4000,5000);
+      self.BankCountCache[1]:= (self.BanKCountCache[1]-self.BanKCountCache[1]);
       GrandExchange.Close(False);
+      Sleep(5000,6000);
       Bank.Open;
+      Sleep(4000,5000);
       self.BankCount;
+      Sleep(5000,7000);
     end;
   end;
 end;
@@ -287,6 +296,7 @@ begin
     if self.BankCountCache[0]<500 then exit(ERestockStates.BUY_HERBS);
       if self.BankCountCache[2]<500 then exit (ERestockStates.BUY_VIALS);
         if not Map.Walker.InRange(self.GEPoint,30) then exit(ERestockStates.WALK_TO_GE);
+          if self.BankCountCache[0]>501 then exit(ERestockStates.EXIT_RESTOCK);
 end;
 
 procedure THerb.RestockRun;
@@ -302,6 +312,7 @@ begin
       ERestockStates.WALK_TO_GE: self.WalkToGE;
       ERestockStates.SELL_POTIONS: self.SellUnfinished;
       ERestockStates.BUY_HERBS: self.OrderHerbs;
+      ERestockStates.EXIT_RESTOCK: self.AssignPotionStates;
     end;
     Antiban.DoAntiban;
   end;
@@ -360,8 +371,7 @@ end;
 begin
   TemplateForm.Init();
   run.Init;
-  run.CacheCount;
+  run.CacheCount; //Intiantes The Opening Cache Sequence.
   run.MainRun;
 end.
-
                                                        
