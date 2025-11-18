@@ -1,14 +1,14 @@
-{
+
 -------------Makes Unfinished Potions From Grimy Herbs----------
 Items Needed: Grimy Herbs, Vials of Water
 
 Default Values: Will Enter Restock Phase when grimy herbs in bank fall below 500.
-  Will buy 3k herbs at a time. This can be changed below in THerb.Init. Check comments. Will also sell any unfinished potions. Does not buy vials at this time. 
+  Will buy 3k herbs at a time. This can be changed below in THerb.Init. Check comments. Will also sell any unfinished potions.
 
 Instructions for changing herb type.. Scroll down to the /////// box in THerb.Init.
   -Read the instructions there. It's simple as changing two words.
 
-*Runs To GE to Buy Herbs and sell unfinished pots.
+*Runs To GE to Buy Herbs.
 *Runs To Varrok East Bank To Degrime and clean.
 
 WARNING: When setting antiban, do not use random bank or anything that does random things to bank interface. They will ruin cached numbers.
@@ -71,19 +71,19 @@ begin
   if lo = 0 then Exit(hi);
   if hi = 0 then Exit(lo);
 
-  Result := (hi+100); ///adds 100 gp to the highest order price.
+  Result := (hi+100);
 end;
 {***********CHANGE HERBS BELOW*************}
 procedure THerb.Init;
 begin
-  RSClient.DisableRealInput;
+  RSClient.EnableRealInput;
   Map.Setup([ERSChunk.VARROCK]);
 ////////////// //////////////////////// Change The Names Here To desired herb
   self.TargetGHerb:='Grimy torstol';// Make sure you follow the format with uppercase and lowercase.
   self.TargetCHerb:='Torstol';      // The first letter of every herb will be upper or lower case. Pay close attention
 ///////////////////////////////////////
   self.TargetArray:= [self.TargetGHerb];
-  self.Unf:= (self.TargetCHerb+' potion (unf)');  {Item Creation for Unfinished Potions}
+  self.Unf:= (self.TargetCHerb+' potion (unf)');
   self.NotedUnf:=('noted '+self.TargetCHerb+' potion (unf)');
 
   self.Restock.UnfinishedBankItem:= new TRSBankItem(self.unf, -1);
@@ -103,7 +103,7 @@ begin
 end;
 
 //////////////////////HELPER FUNCTIONS AND PROCEDURES\\\\\\\\\\\\\\\\\\\\\\\\\\\
-procedure THerb.Collect; //Collects sold and baught herbs from GE.
+procedure THerb.Collect;
 begin
   CollectionBox.Open;
   Sleep(300,450);
@@ -112,7 +112,7 @@ begin
   Keyboard.KeyPress(EKeyCode.ESCAPE);
 end;
 
-function THerb.BankCount:TIntegerArray; //This caches the inventory count to THerb.BankCountCache. Grimy Herbs is index 0. Unfinished Potions Index 1 and vials is index2. 
+function THerb.BankCount:TIntegerArray;
 begin
   Result+= Bank.Items.ReadStack(self.TargetGHerb);
   Result+= Bank.Items.ReadStack(self.Unf);
@@ -183,7 +183,7 @@ end;
 
 procedure THerb.OpenBank;//opens bank and makes sure things are withdrawn properly.
 begin
-  if not Map.Walker.Inrange(Self.BankPoint,35) then Map.Walker.Webwalk(self.BankPoint,4,0,False);
+  if not Map.Walker.Inrange(Self.BankPoint,35) then Map.Walker.WebWalk(self.BankPoint,4,0,False);
   Bank.open(True);
   Sleepuntil ((bank.IsOpen),50,2000);
   Self.BankCount;
@@ -207,10 +207,16 @@ begin
   self.MakeUnfinished(self.TargetCHerb);
 end;
 /////////////////////////////GE RELATED HELPER FUNCTIONS\\\\\\\\\\\\\\
-procedure THerb.OrderHerbs; //This procedure buys herbs from GE. Uses parameters in THerb.Init to control amounts.
+procedure THerb.StateExit;
+begin
+  self.OpenBank;
+  self.BankTransaction;
+end;
+procedure THerb.OrderHerbs;
 var
   i:Integer;
 begin
+  if not Map.Walker.Inrange(self.GEPoint,30) then self.WalkToGE;
   if Bank.IsOpen then Bank.Close(False);
 
   self.Restock.Clerk.Click(True,5);
@@ -230,7 +236,7 @@ begin
   end;
 end;
 
-procedure THerb.WalkToGE; //walks to GE
+procedure THerb.WalkToGE;
 begin
   Map.Walker.Webwalk(self.GEPoint);
 end;
@@ -264,7 +270,7 @@ begin
       Sleep(3000,4000);
       GrandExchangeOffer.Confirm;
       Sleep(4000,5000);
-      self.BankCountCache[1]:= (self.BanKCountCache[1]-self.BanKCountCache[1]); //subtracts sold amount of potions from cached count
+      self.BankCountCache[1]:= (self.BanKCountCache[1]-self.BanKCountCache[1]);
       GrandExchange.Close(False);
       Sleep(5000,6000);
       Bank.Open;
@@ -275,7 +281,7 @@ begin
   end;
 end;
 
-procedure THerb.CacheCount; //Specialized start procedure. It runs between init and main run. It makes sure the counts are properly cached before attempting anything. 
+procedure THerb.CacheCount;
 var
 h:TRSBankItem;
 amount: Integer;
@@ -312,7 +318,7 @@ begin
       ERestockStates.WALK_TO_GE: self.WalkToGE;
       ERestockStates.SELL_POTIONS: self.SellUnfinished;
       ERestockStates.BUY_HERBS: self.OrderHerbs;
-      ERestockStates.EXIT_RESTOCK: self.AssignPotionStates;
+      ERestockStates.EXIT_RESTOCK: self.OpenBank;
     end;
     Antiban.DoAntiban;
   end;
@@ -320,14 +326,11 @@ end;
 
 function THerb.AssignPotionStates:EPotionStates; //Assigns Enums For THerb.MainRun
 begin
-  if Inventory.Items.Contains ('Vial of water') and Inventory.Items.Contains (self.TargetGHerb) then
-  exit(EPotionStates.CLEAN_COMBINE);
-      if Bank.IsOpen then
-      exit (EPotionStates.WITHDRAW_ITEMS_CLOSE_BANK);
-        if Inventory.Items.Count (self.Unf)=14 then
-        exit (EPotionStates.OPEN_BANK_AND_DEPOSIT);
-          if (self.BankCountCache[0]<500) then
-          exit(EPotionStates.RESTOCK);
+  if (self.BankCountCache[0]<500) then exit(EPotionStates.RESTOCK);
+    if Inventory.Items.Contains ('Vial of water') and Inventory.Items.Contains (self.TargetGHerb) then
+    exit(EPotionStates.CLEAN_COMBINE);
+      if Bank.IsOpen then exit (EPotionStates.WITHDRAW_ITEMS_CLOSE_BANK);
+        if Inventory.Items.Count (self.Unf)=14 then exit (EPotionStates.OPEN_BANK_AND_DEPOSIT);
 end;
 
 
@@ -350,7 +353,6 @@ begin
       Antiban.DoAntiban;
     end;
 end;
-
 ///////////////////////////////////FORM STUFF\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 Var
   TemplateForm: TScriptForm;
@@ -373,5 +375,5 @@ begin
   run.Init;
   run.CacheCount; //Intiantes The Opening Cache Sequence.
   run.MainRun;
-end.
+end. 
                                                        
