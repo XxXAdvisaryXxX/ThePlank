@@ -2,17 +2,21 @@
 -------------Makes Unfinished Potions From Grimy Herbs----------
 Items Needed: Grimy Herbs, Vials of Water
 
-Default Values: Will Enter Restock Phase when grimy herbs in bank fall below 500.
-  Will buy 3k herbs at a time. This can be changed below in THerb.Init. Check comments. Will also sell any unfinished potions.
+DEFAULT VALUES: CAN ALL BE CHANGED BELOW IN THERB.INIT
+
+RESTOCK THRESHOLD: 500 (At 500 grimy herbs in bank, will restock);
+BUY AMOUNT: 2,000 (Buys 2000 herbs for turning into unfinished potions)
+HERB TYPE: Torstol (Can be changed below as well)
+
+All 3 can be programmed super easily. Check the code below for more info.
 
 Instructions for changing herb type.. Scroll down to the /////// box in THerb.Init.
   -Read the instructions there. It's simple as changing two words.
 
 *Runs To GE to Buy Herbs.
 *Runs To Varrok East Bank To Degrime and clean.
-
-WARNING: When setting antiban, do not use random bank or anything that does random things to bank interface. They will ruin cached numbers.
  }
+
 {$I Wasplib/osrs.simba}
 const
   MAX_RUNTIME_MINUTES = 360;
@@ -83,8 +87,8 @@ begin
   self.TargetCHerb:='Torstol';      // The first letter of every herb will be upper or lower case. Pay close attention
 ///////////////////////////////////////
 
-  self.Restock.ThreshHold:=25; //Changes when you resupply. If threshold is 500, at 500 grimy herbs it restocks at ge.
-  self.Restock.BuyHerbQuant :=50; //Change This to the number of Grimy Herbs wish to buy.
+  self.Restock.ThreshHold:=500; //Changes when you resupply. If threshold is 500, at 500 grimy herbs it restocks at ge.
+  self.Restock.BuyHerbQuant :=2000; //Change This to the number of Grimy Herbs wish to buy.
   self.Restock.BuyVialQuant:= 6000; //not used atm. But will be in the future.
 
  ////////////////////////////////////////DO NOT CHANGE BELOW THIS\\\\\\\\\\\\\\\\\\\
