@@ -77,7 +77,7 @@ begin
   if lo = 0 then Exit(hi);
   if hi = 0 then Exit(lo);
 
-  Result := (lo+100);
+  Result := (hi-5);  // this will buy herbs for 100gp above the lowest sell price in last 15 minutes
 end;
 /////////////////CHANGE HERBS AND THRESHOLDS BELOW\\\\\\\\\\\\\\\\\\\\\
 procedure THerb.Init;
@@ -87,19 +87,19 @@ begin
   self.TargetCHerb:='Torstol';      // The first letter of every herb will be upper or lower case. Pay close attention
 ///////////////////////////////////////
 
-  self.Restock.ThreshHold:=500; //Changes when you resupply. If threshold is 500, at 500 grimy herbs it restocks at ge.
+  self.Restock.ThreshHold:=350; //Changes when you resupply. If threshold is 500, at 500 grimy herbs it restocks at ge.
   self.Restock.BuyHerbQuant :=2000; //Change This to the number of Grimy Herbs wish to buy.
   self.Restock.BuyVialQuant:= 6000; //not used atm. But will be in the future.
 
  ////////////////////////////////////////DO NOT CHANGE BELOW THIS\\\\\\\\\\\\\\\\\\\
-  RSClient.DisableRealInput;
+  RSClient.EnableRealInput;
   Map.Setup([ERSChunk.VARROCK]);
 
   self.TargetArray:= [self.TargetGHerb];
-  self.Unf:= (self.TargetCHerb+' potion (unf)');
+  self.Unf:= (self.TargetCHerb+' potion (unf)');       ///These 3 are used to assign herb types to records for easy access
   self.NotedUnf:=('noted '+self.TargetCHerb+' potion (unf)');
 
-  self.Restock.UnfinishedBankItem:= new TRSBankItem(self.unf, -1);
+  self.Restock.UnfinishedBankItem:= new TRSBankItem(self.unf, -1);    //used for handling the noted versions when selling potions.
   self.Restock.UnfinishedBankItem.Noted:=True;
 
   self.Restock.SellPrice :=Itemdata.GetPrice(self.Unf);   //How Much To Sell Unfinished For
@@ -113,7 +113,7 @@ begin
 end;
 
 //////////////////////HELPER FUNCTIONS AND PROCEDURES\\\\\\\\\\\\\\\\\\\\\\\\\\\
-procedure THerb.Collect;
+procedure THerb.Collect;  //This is a helper function to collect herbs from the collection box
 begin
   CollectionBox.Open;
   Sleep(300,450);
@@ -122,20 +122,20 @@ begin
   Keyboard.KeyPress(EKeyCode.ESCAPE);
 end;
 
-function THerb.BankCount:TIntegerArray;
+function THerb.BankCount:TIntegerArray; //Takes the count of items and caches the numbers in Record of THerb.BankCountCache
 begin
-  Result+= Bank.Items.ReadStack(self.TargetGHerb);
-  Result+= Bank.Items.ReadStack(self.Unf);
+  Result+= Bank.Items.ReadStack(self.TargetGHerb); //reads the target Grimy Herb count and caches it. Make sure bank is open.
+  Result+= Bank.Items.ReadStack(self.Unf);      //  reads the amount of unfinished potions in the bank.
   Result+= Bank.Items.ReadStack ('Vial of water');
   self.BankCountCache:= Result;
 end;
 
-function THerb.IsItemDepleted(Item:TRSItem):boolean;//Returns true if inventory item is depleted. Helper function
+function THerb.IsItemDepleted(Item:TRSItem):boolean;//Returns true if inventory item is depleted. Used as a check when combining potions.
 begin
   if Inventory.Items.Count(Item)<1 then
-  result:=true;
+  result:=true;  //if true we combined the items.
     if result=false then
-    Writeln 'Waiting For Unfinished Potions';
+    Writeln 'Waiting For Unfinished Potions';  //We still waiting.
 end;
 
 procedure THerb.CleanHerbs(Herb:TRSItemArray); //helper function that cleans herbs.
@@ -211,10 +211,10 @@ begin
   Bank.DepositInventory;
 
   if Bank.IsOpen and (Inventory.Items.Contains(self.Unf)) then
-  Bank.DepositInventory;
+  Bank.DepositInventory;   //Double checks and makes sure items properly deposited.
 end;
 
-procedure THerb.CloseBank; //Closes the bank and caches.
+procedure THerb.CloseBank; //Closes the bank and caches the counts.
 begin
   if Bank.Isopen then writeln self.BankCount;
   Bank.Close(False);
@@ -243,24 +243,24 @@ begin
   Result := Self.Confirm();
 end;
 
-procedure THerb.OrderHerbs;
+procedure THerb.OrderHerbs;  //This procedure handles the ordering of herbs.
 var
   i:Integer;
 begin
-  Minimap.CompassDegrees := 360;
-  if not Map.Walker.Inrange(self.GEPoint,25) then self.WalkToGE;
-  if Bank.IsOpen then Bank.Close(False);
+  Minimap.CompassDegrees := 360;  //helps with finding the bank.
+  if not Map.Walker.Inrange(self.GEPoint,25) then self.WalkToGE; //checks to make sure we at ge. if not it walks there.
+  if Bank.IsOpen then Bank.Close(False);  //this is a check. Sometimes player walks to ge with full inventory and must deposit. The deposit action doesnt close the bank sometimes
 
-  self.Restock.Clerk.Interact (['Exchange'],5);
-  sleepuntil((GrandExchange.Isopen=True),100,4000);
-  if not GrandExchange.isopen then exit else;
-  i:= GrandExchange.IndexOfEmptySlot;
+  self.Restock.Clerk.Interact (['Exchange'],5);    //clicks clerk
+  sleepuntil((GrandExchange.Isopen=True),100,4000);    //makes sure ge is open
+  if not GrandExchange.isopen then exit else;  //emergency exit incase the ge isnt open
+  i:= GrandExchange.IndexOfEmptySlot;  //Finds the first empty open slot in G.E  and stores it in i var
   begin
-    GrandExchange.Slots[i].Buy();
-    Sleep(5000,7000);
-    GrandExchangeoffer.CreateBuyOffer(self.TargetGHerb,self.Restock.BuyPrice,self.Restock.BuyHerbQuant);
+    GrandExchange.Slots[i].Buy(); //clicks the i slot buy interface
+    Sleep(5000,7000);  //slow delay for any lag.
+    GrandExchangeoffer.CreateBuyOffer(self.TargetGHerb,self.Restock.BuyPrice,self.Restock.BuyHerbQuant); //puts in order for herbs.
     Sleep(5000,6000);
-    self.BankCountCache[0]:= (self.BanKCountCache[0]+self.Restock.BuyHerbQuant);
+    self.BankCountCache[0]:= (self.BanKCountCache[0]+self.Restock.BuyHerbQuant); //Makes sure the cached number of unfinished doesnt get messed with when state changes.
     self.Collect;
     Bank.Open;
       if Bank.Isopen then writeln self.BankCount
@@ -451,4 +451,6 @@ begin
   TemplateForm.Init();
   run.Init;
   run.MainRun;
-end.  
+end.
+
+                                           
