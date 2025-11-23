@@ -1,20 +1,23 @@
 {
 -------------Makes Unfinished Potions From Grimy Herbs----------
-Items Needed: Grimy Herbs, Vials of Water
 
-DEFAULT VALUES: CAN ALL BE CHANGED BELOW IN THERB.INIT
+Items Needed To Buy Manually: Vials of water. Just buy a large amount. Bot will collect them from collection box. Just put in order.
+If Target Herbs aren't found in bank; itll auto order them. You can manually purchase them if you want.
 
-RESTOCK THRESHOLD: 500 (At 500 grimy herbs in bank, will restock);
+****DEFAULT VALUES: CAN ALL BE CHANGED BELOW IN THERB.INIT****
+
+RESTOCK THRESHOLD: 250 (At 250 grimy herbs in bank, will restock);
 BUY AMOUNT: 2,000 (Buys 2000 herbs for turning into unfinished potions)
 HERB TYPE: Torstol (Can be changed below as well)
 
 All 3 can be programmed super easily. Check the code below for more info.
 
-Instructions for changing herb type.. Scroll down to the /////// box in THerb.Init.
-  -Read the instructions there. It's simple as changing two words.
+-Make Sure Grimy Herbs,Unfinished Potions and Vials of water all in the same bank tab. Just have them on the tab where you dont have to scroll when tab selected.
+-Runs To GE to Buy Herbs.
+-Runs To Varrok East Bank To Degrime and clean.
 
-*Runs To GE to Buy Herbs.
-*Runs To Varrok East Bank To Degrime and clean.
+IF YOU HAVE HERBS IN BANK ALREADY PURCHASED JUST START BOT IN Varrok EAST BANK.
+IF YOU NEED BOT TO BUY HERBS START NEAR GE.
  }
 
 {$I Wasplib/osrs.simba}
@@ -38,6 +41,7 @@ type
     WALK_TO_GE,
     EXIT_RESTOCK
   );
+
  THerb = record
     Actions, MaxTime, MaxActions, MaxLevel: UInt64; //Used for future forms.
     FormSetting: Boolean; //used for future forms
@@ -45,6 +49,7 @@ type
     TargetArray:TRSItemArray;  //Used for a specific function within TRSHerblore
     BankPoint,GEPoint:TPoint;
     BankCountCache:TIntegerArray;
+    Countdown: TCountDown;
       Restock:Record
         BuyHerbQuant,BuyVialQuant,BuyPrice,SellPrice,ThreshHold:Integer;
         Clerk:TRSObject;
@@ -77,7 +82,7 @@ begin
   if lo = 0 then Exit(hi);
   if hi = 0 then Exit(lo);
 
-  Result := (hi-5);  // this will buy herbs for 100gp above the lowest sell price in last 15 minutes
+  Result := (hi+25);  // this will buy herbs for 100gp above the lowest sell price in last 15 minutes
 end;
 /////////////////CHANGE HERBS AND THRESHOLDS BELOW\\\\\\\\\\\\\\\\\\\\\
 procedure THerb.Init;
@@ -115,6 +120,8 @@ end;
 //////////////////////HELPER FUNCTIONS AND PROCEDURES\\\\\\\\\\\\\\\\\\\\\\\\\\\
 procedure THerb.Collect;  //This is a helper function to collect herbs from the collection box
 begin
+  if Bank.IsOpen then Bank.Close(False);
+  writeln 'Collecting Supplies';
   CollectionBox.Open;
   Sleep(300,450);
   CollectionBox.CollectToBank;
@@ -171,7 +178,6 @@ amount: Integer;
 begin
   vial:='Vial of water';
   While Vials=False do
-
   begin
     amount:=28;
     h:= new TRSBankItem(Herb,Amount);
@@ -179,7 +185,6 @@ begin
     exit;
   end;
     While Vials=True do
-
     begin
       if inventory.Items.Contains(self.TargetCHerb) then Bank.DepositInventory;
       sleepuntil (Bank.IsOpen=True,200,2000);
@@ -201,7 +206,7 @@ begin
   Bank.open(True);
   Sleepuntil ((Bank.IsOpen),50,2000);
   if Inventory.Items.ContainsAny([self.TargetGHerb,self.TargetCHerb, 'Vial of water']) then Bank.DepositInventory;
-    if bank.isopen then writeln self.BankCount
+    if bank.isopen then writeln (self.BankCount[0]-14)
     else exit;
 end;
 
@@ -216,7 +221,7 @@ end;
 
 procedure THerb.CloseBank; //Closes the bank and caches the counts.
 begin
-  if Bank.Isopen then writeln self.BankCount;
+  if Bank.Isopen then writeln (self.BankCount[0]+14)  ;
   Bank.Close(False);
   Sleepuntil ((not Bank.Isopen),25,2000);
 end;
@@ -260,12 +265,8 @@ begin
     Sleep(5000,7000);  //slow delay for any lag.
     GrandExchangeoffer.CreateBuyOffer(self.TargetGHerb,self.Restock.BuyPrice,self.Restock.BuyHerbQuant); //puts in order for herbs.
     Sleep(5000,6000);
-    self.BankCountCache[0]:= (self.BanKCountCache[0]+self.Restock.BuyHerbQuant); //Makes sure the cached number of unfinished doesnt get messed with when state changes.
+    self.BankCountCache[0]:= (self.Restock.BuyHerbQuant); //Makes sure the cached number of unfinished doesnt get messed with when state changes.
     self.Collect;
-    Bank.Open;
-      if Bank.Isopen then writeln self.BankCount
-      else exit;
-    Bank.Close;
   end;
 end;
 
@@ -285,37 +286,31 @@ var
 begin
   Minimap.CompassDegrees := 360;
   Bank.Open;
-  Sleepuntil ((bank.IsOpen),50,8000);
+  SleepUntil ((bank.IsOpen),50,8000);
   Bank.DepositInventory;
-    if bank.isopen then writeln self.BankCount
-    else exit;
+
+ // if bank.isopen then writeln self.BankCount
+ // else exit;
 
   Bank.Withdraw(self.Restock.UnfinishedBankItem,True,True,True);
   Bank.Close(False);
   Sleep (400,600);
   begin
     self.Restock.Clerk.Click(True,5);
-    sleepuntil((GrandExchange.Isopen=True),100,4000);
-    if not GrandExchange.isopen then exit else;
+    SleepUntil((GrandExchange.Isopen=True),100,4000);
+    if not GrandExchange.isopen then
+    exit else;
     i:= GrandExchange.IndexOfEmptySlot;
     begin
       GrandExchange.Slots[i].Sell();
       Inventory.Items.Interact (self.NotedUnf,'Offer');
       Sleep(2000,4000);
-      GrandExchangeOffer.Price[self.Restock.SellPrice-250];
+      GrandExchangeOffer.Price[self.Restock.SellPrice-50]; //
       Sleep(3000,4000);
       GrandExchangeOffer.Confirm;
       Sleep(4000,5000);
       self.BankCountCache[1]:= (self.BanKCountCache[1]-self.BanKCountCache[1]);
       GrandExchange.Close(False);
-      Sleep(5000,6000);
-      Bank.Open;
-      Sleep(4000,5000);
-        if not bank.isopen then
-        writeln self.BankCount else
-        exit;
-
-      Sleep(5000,7000);
     end;
   end;
 end;
@@ -323,7 +318,6 @@ end;
 procedure THerb.ExitStock;
 begin
   self.OpenBank;
-  self.BankCountCache[1]:=(self.Restock.ThreshHold+25);
 end;
 
 procedure THerb.CacheCount;//First Procedure used when starting script. Gets a proper  inventory count before continuing.
@@ -336,12 +330,24 @@ begin
   Bank.Open(True);
   Bank.DepositInventory;
   Bank.Withdraw (h,True,True,True);
-    if bank.isopen then self.BankCount
-    else exit;
+  if bank.isopen then self.BankCount
+  else exit;
   Bank.DepositInventory;
 
   Bank.Close(False);
   Writeln self.BankCountCache[0];
+end;
+
+procedure THerb.DoBreakFinished(task: PBreakTask);
+begin
+  if not RSClient.IsLoggedIn then Login.DoLogin;
+  self.CacheCount;
+end;
+
+procedure THerb.DoSleepFinished(task1: PSleepTask);
+begin
+  if not RSClient.IsLoggedIn then Login.DoLogin;
+  self.CacheCount;
 end;
 
 ////////////////////////////////ASSIGN STATES SECTION///////////////////////////////////////////////
@@ -365,11 +371,14 @@ begin
 end;
 
 procedure THerb.RestockRun;
-  var
+var
   action:ERestockStates;
+  task: TBreakTask;
+  task2:TSleepTask;
 begin
+  Antiban.OnFinishBreak := @Self.DoBreakFinished;
+  Antiban.OnFinishSleep := @Self.DoSleepFinished;
   while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
-
   begin
     action := Self.AssignRestockStates;
     WriteLn(action);
@@ -385,7 +394,7 @@ end;
 
 function THerb.AssignPotionStates:EPotionStates; //Assigns Enums For THerb.MainRun
 begin
-  if (self.BankCountCache[0]<self.Restock.ThreshHold) and (self.BankCountCache[1]<self.Restock.ThreshHold)
+  if (self.BankCountCache[0]<self.Restock.ThreshHold) //and (self.BankCountCache[1]<self.Restock.ThreshHold)
   then exit(EPotionStates.RESTOCK);
 
     if Bank.IsOpen and (Inventory.Items.Contains (self.TargetGHerb)) and (Inventory.Items.Contains ('Vial of water'))
@@ -409,25 +418,33 @@ end;
 
 
 procedure THerb.MainRun; //Uses previous function to link states to 1 to 1 actions.
-  var
-  action: EPotionStates;
-
+var
+action: EPotionStates;
+task: TBreakTask;
+task2:TSleepTask;
+i: Integer;
 begin
- self.CacheCount; //Intiantes The Opening Cache Sequence.
+  Antiban.OnFinishBreak := @Self.DoBreakFinished;
+  Antiban.OnFinishSleep := @Self.DoSleepFinished;
+  self.CacheCount; //Intiantes The Opening Cache Sequence.
   while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
-
   begin
-    action := Self.AssignPotionStates;
-    WriteLn(action);
-      case action of
-        EPotionStates.CLEAN_COMBINE:self.CleanandCombine;
-        EPotionStates.OPEN_BANK:self.OpenBank;
-        EPotionStates.HANDLE_BANK:self.WithdrawForUnfinished(self.TargetGHerb,True);
-        EPotionStates.RESTOCK: self.RestockRun;
-        EPotionStates.CLOSE_BANK:self.CloseBank;
-        EPotionStates.DEPOSIT_POTIONS: self.Deposit;
+    for i:= 1 to 120 do
+    begin
+      action := Self.AssignPotionStates;
+      WriteLn(action);
+      WriteLn(i);
+        case action of
+          EPotionStates.CLEAN_COMBINE:self.CleanandCombine;
+          EPotionStates.OPEN_BANK:self.OpenBank;
+          EPotionStates.HANDLE_BANK:self.WithdrawForUnfinished(self.TargetGHerb,True);
+          EPotionStates.RESTOCK: self.RestockRun;
+          EPotionStates.CLOSE_BANK:self.CloseBank;
+          EPotionStates.DEPOSIT_POTIONS: self.Deposit;
+        end;
+        Antiban.DoAntiban;
+        if i=120 then self.Collect;
       end;
-      Antiban.DoAntiban;
     end;
 end;
 ///////////////////////////////////FORM STUFF\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -453,4 +470,5 @@ begin
   run.MainRun;
 end.
 
+                                            
                                            
