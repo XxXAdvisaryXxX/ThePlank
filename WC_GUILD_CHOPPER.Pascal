@@ -1,12 +1,20 @@
 {$I Wasplib/osrs.simba}
 {
 WoodChopping Guild
-
-Banks Or Drops Magic, Willows,Maples Or Yew Trees. Will add redwood.
-
--Chops and either banks or drops. Choose Tree and Drop or Bank Below in the code below.
--- It's super easy. Just goto the bottom of TCuttingGuild.Init. There are two lines with simple instructions.
----Doesnt have antiban yet because I havent tested it.
+-----OverView------
+Banks or Drops Logs at WoodCutting Guild. Simple script.
+-----Things Supported---
+Special Attack
+Maples,Yews,Magics,Willow
+AntiBan
+-----Things Not Supported Yet-----
+WoodBags
+BirdNest Looting
+RedWoods
+------Settings-----
+Go Down TCuttingGuild.Init and check the bottom of the code.
+You Will Need TO Enter True or False. True Drops. False Banks.
+You Will Need To Enter The Type of Tree You Wish To cut. More detailed instructions below.
 }
 const
   MAX_RUNTIME_MINUTES = 360;
