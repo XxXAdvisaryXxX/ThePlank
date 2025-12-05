@@ -147,8 +147,7 @@ begin
   slots:= (Inventory.Items.IndicesOf(['Maple logs','Willow logs','Yew logs']));
   for slot in slots do
   begin
-    Inventory.Slots.Interact(slot, 'Drop');
-    Sleep(120,150);
+    Inventory.ShiftDrop(slots,3);
   end;
 end;
 
@@ -208,4 +207,5 @@ begin
   Form.Init;
   CuttingGuild.Init;
   CuttingGuild.Run;
-end; 
+end;
+       
