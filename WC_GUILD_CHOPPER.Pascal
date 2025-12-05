@@ -15,6 +15,8 @@ RedWoods
 Go Down TCuttingGuild.Init and check the bottom of the code.
 You Will Need TO Enter True or False. True Drops. False Banks.
 You Will Need To Enter The Type of Tree You Wish To cut. More detailed instructions below.
+----DEFAULT SETTINGS----
+Will Chop Willows and Drop Them if not altered.
 }
 const
   MAX_RUNTIME_MINUTES = 360;
@@ -51,8 +53,8 @@ begin
 
   Inventory.Open;
  //////User Controls
-  self.ToDrop:=True;  //True Drops Logs, False Banks Them.
-  self.UserTree:= self.Willows; //Simply Replace With your Desired Tree. Maples,Yews,Magics,Willows
+  self.ToDrop:=True;  //<<<<<<True Drops Logs, False Banks Them.
+  self.UserTree:= self.Willows; //<<<<Delete The 'Willows' Text To the left(Leaving self.) Replace with Maples,Yews,Magics or Willows
 end;
 
 procedure TCuttingGuild.Spec; //see's if spec is available
