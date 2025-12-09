@@ -1,0 +1,219 @@
+{
+---Mining Guild Alpha----
+Mines ores at the mining guild.
+
+---Features-----
+Easily Customizable
+Drops Or Banks
+Does Iron,Coal,Mith,Addy, Amythyst
+Special Attack Supported
+Anchored Tether Spots For Fast Iron Powermining!
+
+---Features To Be Added Later---
+Optional Rune ore mining with world hops
+Coal Bag
+Superheating
+
+--How To Customize--
+1.Head Down To The Bottom of TMine Init (Line 60);
+2.Read The Comments and Follow Instructions There. Only 4 Things To Change.
+}
+{$I Wasplib/osrs.simba}
+const
+  MAX_RUNTIME_MINUTES = 360;
+type
+  EStates=enum
+  (
+    MINE_ROCK,
+    BANK_OR_DROP,
+    HANDLE_BANK,
+    CLOSE_BANK
+  );
+
+  TMine=record
+    IronRocks,CoalRocks,AddyRocks,MithRocks,RuneRocks,AmmyRocks,TargetRocks:TRSObjectArray;
+    BankObj:TRSObject;
+    Points:TPointArray;
+    Anchor:TPoint;
+    ToDrop:Boolean;
+    Range:Integer;
+  end;
+
+procedure TMine.Init;
+begin
+  Map.Setup([Chunk(Box(46,152,47,151), 0)]);
+
+  self.Points.SetLength(6);
+  self.Points[0]:= [12116,11550];//Eastern Iron Spot
+  self.Points[1]:= [12084,11546]; //Western Iron Spot
+  self.Points[2]:= [12212,11546]; //Rune Rock Spot
+  self.Points[3]:= [12052,11558]; //Standing at Bank Chest
+  self.Points[4]:= [12084,11546]; //Amethyst South Pit
+  self.Points[5]:= [12084,11546]; //Middle Point Between Bank and Rune Rocks
+
+  self.BankObj:= TRSObject.Create(@Map.Walker,[1,1,3],[self.Points[3].offset(-2,0)],['Bank chest']); //Creates BankChest Object
+
+  self.AddyRocks{*}:= TRSObjectArray.Create(ObjectsJSON.GetByName('Adamantite rocks'));
+  self.IronRocks{*}:= TRSObjectArray.Create(ObjectsJSON.GetByName('Iron rocks'));
+  self.CoalRocks{*}:= TRSObjectArray.Create(ObjectsJSON.GetByName('Coal rocks'));     //All these setup the object arrays.
+  self.MithRocks{*}:= TRSObjectArray.Create(ObjectsJSON.GetByName('Mithril rocks'));
+  self.RuneRocks{*}:= TRSObjectArray.Create(ObjectsJSON.GetByName('Runite rocks'));
+  self.AmmyRocks{*}:= TRSObjectArray.Create(ObjectsJSON.GetByName('Amethyst crystals'));
+  //User Controls
+  self.TargetRocks:= self.MithRocks; //Use the lines above to enter your rock. You'll see them marked {*}
+  self.ToDrop:=False; //Typing True Drops Items, Typing False Banks Items
+  self.Anchor:=self.Points[5];//Replace the numbers in the bracket for Iron only. '0' for East Cluster. '1' for West Cluster (Closest to bank);
+  self.Range:=100; //If Mining Iron put range to '0'. Anything else put range at '100';
+end;
+
+function TMine._PercentPixelDiff(Area: TBox; WaitTime: Int32): Int32;   //writes pixel shift in %
+var
+  tLen,sLen: Int32;
+begin
+  tLen := TPointArray.CreateFromBox(Area, True).Length;
+  sLen := Target.GetPixelDifference(WaitTime, Area).Length;
+  result := Round((sLen/tLen)*100);
+end;
+
+function TMine.IsMining:Boolean; //If our pixel shift is above 12% in playerbox; then we return true.
+begin
+  If (self._PercentPixelDiff ((Mainscreen.PlayerBox),600))>12 then
+  result:=True;
+end;
+
+procedure TMine.Spec; //see's if spec is available
+begin
+ If Minimap.HasSpecial then
+ Minimap.Toggle (ERSMinimapOrb.SPECIAL);
+end;
+
+procedure TMine.ShouldSpec;//engages spec
+begin
+  If Minimap.GetPercent(ERSMiniMapOrb.SPECIAL)=100 then
+  self.Spec;
+  SleepUntil ((Minimap.GetPercent(ERSMiniMapOrb.SPECIAL)=0),200,2000);
+end;
+
+function TMine.Spec100: Boolean; //See's if our spec is full or not
+begin
+  If Minimap.GetPercent(ERSMiniMapOrb.SPECIAL)=100 then
+  result:=True;
+end;
+
+procedure TMine.MineRock(rockObj:TRSObjectArray;anchorPoint:TPoint;range:Integer);//To Call rockObj use self.AmmyRocks or whatever from init.
+var                                                                               //use self.Points[0-6] to call anchorPoint. Put Range at 0 for iron. 25 for everything else
+  index: Integer;
+begin
+  if not Map.Walker.Inrange(anchorPoint,range) then
+  begin
+  Map.Walker.WebWalk(anchorPoint,range,0.50,False); //Walks us to our anchorPoint. Mainly used for Iron spots.
+  SleepUntil((MiniMap.IsPlayerMoving=False),100,10000); //Keep the player from trying to click another rock before done moving.
+  end;
+
+  If Minimap.HasSpecial=True and self.Spec100=True then
+  self.ShouldSpec; //checks to see if our spec is availabe then activates
+
+  if not Inventory.IsOpen then
+  Inventory.Open;  //Ensures the inventory is open; much of the state assignment using inventory slot counting.
+
+  index:= rockObj.ClosestIndex(Map.Position.Offset(((Random(-4,4))),28)); //offsets our TPoint due South. To stop From unwanted clicks in F2P Mining Guild
+
+  rockObj[index].Size:=[1,1,2];//Corrects the size
+  rockObj[index].Finder.Colors += [$60735E, 2, EColorSpace.HSL, [1.000, 1.000, 1.000]];//Addy Rock Color. Rewrites shitty cache color.
+  rockObj[index].Finder.Colors += [$2D3D3D, 1, EColorSpace.HSL, [1.000, 1.000, 1.000]];//Coal Rock Color. Rewrites shitty cache color.
+  rockObj[index].Finder.Colors += [$7B5A59, 2, EColorSpace.HSL, [1.000, 1.000, 1.000]];//Mithril Rock Color. Rewrites shitty cache color.
+  rockObj[index].Finder.Colors += [$2D3B59, 1, EColorSpace.HSL, [1.000, 1.000, 1.000]];//Iron Rock Color. Rewrites shitty cache color.
+  Biometrics.Sleep(10,45,ERandomDir.MEAN); //A tiny biometrics sleep. I like to do these after loading several things.
+
+  if Options.GetZoomLevel <> 22 then
+  Options.SetZoomLevel(22);//sets the zoom to optimal levels to find objects on the mainscreen
+
+  rockObj[index].WalkClick(True,12); //clicks on our closest object twice. If false it finds the next object automatically.
+  SleepUntil(self.IsMining=False,250,30000); //Sleeps us after a rock has been clicked. Triggered off of pizel shifts.
+end;
+
+procedure TMine.FullInventory(drop:Boolean); //setting this to true will open bank. False will drop.
+var
+  slot: Integer;
+  slots:TIntegerArray;
+begin
+  if drop=false then //sets whats happen when our boolean parameter is false;
+  begin
+    Bank.Open(self.BankObj);
+    SleepUntil((Bank.IsOpen = True),200,5000);
+    WriteLn 'Bank Should Be Open';
+  end;
+
+  if drop=true then
+  slots:= (Inventory.Items.IndicesOf(['Iron ore']));
+  for slot in slots do
+  begin
+    Inventory.ShiftDrop(slots,3);
+    WriteLn 'Dropped All Ore';
+  end;
+end;
+
+procedure TMine.HandleBankScreen;
+begin
+  Bank.DepositInventory;
+end;
+
+function TMine.AssignStates:EStates;
+begin
+  writeln Inventory.Slots.CountEmpty;
+  if Bank.IsOpen and (Inventory.Slots.CountEmpty > 27) then
+  Exit (EStates.CLOSE_BANK);
+  Sleep(40,100);
+
+  if Bank.IsOpen and (Inventory.Slots.CountEmpty = 0) then
+  Exit (EStates.HANDLE_BANK);
+  Sleep(40,100);
+
+  if (Inventory.Slots.CountEmpty = 0) and not Bank.IsOpen then
+  Exit (EStates.BANK_OR_DROP);
+  Sleep(40,100);
+
+  if (Inventory.Slots.CountEmpty<1) and not Bank.IsOpen then
+  Exit (EStates.MINE_ROCK);
+  Sleep(40,100);
+
+  if false then Exit;
+end;
+
+procedure TMine.Run;
+var
+  action:EStates;
+begin
+  while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
+  begin
+    action := self.AssignStates;
+    WriteLn(action);
+    case action of
+      EStates.MINE_ROCK: self.MineRock(self.TargetRocks,self.Anchor,self.Range);
+      EStates.BANK_OR_DROP: self.FullInventory(self.ToDrop);
+      EStates.HANDLE_BANK: self.HandleBankScreen;
+      EStates.CLOSE_BANK: Bank.Close(False);
+    end;
+    AntiBan.DoAntiban;
+  end;
+end;
+////FORM STUFF
+var
+  TemplateConfig: TConfigJSON;//Vars for the form
+procedure TScriptForm.Init();
+begin
+  TemplateConfig.Setup('scripts' + PATH_SEP + 'my-script-name');
+
+  self.Setup('WC Guild');
+
+  self.CreateAntibanTab();
+  self.Run();
+end;
+var
+  Mine:TMine;
+  Form: TScriptForm;
+begin
+  Form.Init;
+  Mine.Init;
+  Mine.Run;
+end;  
