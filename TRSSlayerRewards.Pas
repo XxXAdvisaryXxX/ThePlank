@@ -4,7 +4,6 @@ type
   ERSTaskButtons           = enum(CANCEL, BLOCK , VIEW_LIST);
   ERSInterfaces            = enum(MAIN, LEFT , RIGHT);
 
-
   TSlayerRewardsInterface = record
     Buttons         : Array [ERSSlayerRewardsButtons] of TRSButton;
     TaskButtons     : Array [ERSTaskButtons] of TRSButton;
