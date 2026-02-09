@@ -1,14 +1,15 @@
 {$INCLUDE_ONCE Wasplib/osrs.simba}
 type
   ERSSlayerRewardsButtons  = enum(UNLOCK, EXTEND, BUY, TASKS, COSMETICS);
-  ERSTaskButtons     = enum(CANCEL, BLOCK , VIEW_LIST);
-  ERSInteractOptions = enum(ASSIGNMENT , TRADE , SlayerRewards);
-  ERSSlayerMasters   = enum(NIEVE);
+  ERSTaskButtons           = enum(CANCEL, BLOCK , VIEW_LIST);
+  ERSInteractOptions       = enum(ASSIGNMENT , TRADE , SlayerRewards);
+  ERSInterfaces            = enum(MAIN, LEFT , RIGHT);
+
 
   TSlayerRewardsInterface = record
     Buttons         : Array [ERSSlayerRewardsButtons] of TRSButton;
     TaskButtons     : Array [ERSTaskButtons] of TRSButton;
-    InterfaceSetup  : TRSInterface;
+    InterfaceSetup  : Array [ERSInterfaces] of TRSInterface;
     SlotSetup       : TRSSlotInterface;
     IconDTM         : Array of TDTM;
     Scroll          : TRSScrollBar;
@@ -17,11 +18,9 @@ type
 
   TRSSlayerRewards = record
    SlayerInterface : TSlayerRewardsInterface;
-   SlayerRewardss  : array [ERSSlayerMasters] of TRSEntity;
-   SelectOptions   : array [ERSInteractOptions] of String;
   end;
 
-procedure TRSSlayerRewards.SetupInterfaces();
+procedure TRSSlayerRewards._SetupStaticInterfaces();
 var
   interfaceBox : TBox;
   buttonBox    : TBox;
@@ -34,7 +33,7 @@ begin
   interfaceBox.X2 := GrandExchange.Bounds.X2 + 4;
   interfaceBox.Y1 := GrandExchange.Bounds.Y1 - 10;
   interfaceBox.Y2 := GrandExchange.Bounds.Y2 + 10;
-  self.SlayerInterface.InterfaceSetup.Bounds := interfaceBox;
+  self.SlayerInterface.InterfaceSetup[ERSInterfaces.MAIN].Bounds := interfaceBox;
 
   titleBox.Y1 := titleBox.Y1 - 23;
   titleBox.Y2 := titleBox.Y2 + 15;
@@ -58,9 +57,24 @@ begin
 
   self.SlayerInterface.TaskButtons[ERSTaskButtons.CANCEL] := new TRSButton(buttonBox.Offset([-50 , +70]),btnColors);
   self.SlayerInterface.TaskButtons[ERSTaskButtons.BLOCK] := new TRSButton(buttonBox.Offset([+10 , +70]),btnColors);
+end;
 
-  //ShowOnTarget(self.SlayerInterface.TaskButtons[ERSTaskButtons.BLOCK].Bounds);
-  //ShowOnTarget(self.SlayerInterface.Title.CloseButton);
+procedure TRSSlayerRewards.SetupDynamicInterfaces();
+var
+  leftBox  : TBox;
+  rightBox : TBox;
+begin
+  leftBox.X1 := self.SlayerInterface.InterfaceSetup[ERSInterfaces.MAIN].Bounds.X1;
+  leftBox.X2 := self.SlayerInterface.InterfaceSetup[ERSInterfaces.MAIN].Bounds.X2 - 400;
+  leftBox.Y1 := self.SlayerInterface.InterfaceSetup[ERSInterfaces.MAIN].Bounds.Y1;
+  leftBox.Y2 := self.SlayerInterface.InterfaceSetup[ERSInterfaces.MAIN].Bounds.Y2;
+
+  rightBox := leftBox.Offset([225 , 0]);
+
+  self.SlayerInterface.InterfaceSetup[ERSInterfaces.LEFT].Bounds := leftBox;
+  self.SlayerInterface.InterfaceSetup[ERSInterfaces.RIGHT].Bounds := rightBox;
+
+  ShowOnTarget(rightBox);
 end;
 
 function TRSSlayerRewards.IsSlayerRewardsScreenOpen() : Boolean;
@@ -109,10 +123,11 @@ end;
 var
   SlayerRewards : TRSSlayerRewards;
 begin
-  SlayerRewards.SetupInterfaces();
+  SlayerRewards._SetupStaticInterfaces();
+  SlayerRewards.SetupDynamicInterfaces();
  // WriteLn SlayerRewards.IsSlayerRewardsScreenOpen();
  // WriteLn SlayerRewards.CancelTask();
   //WriteLn SlayerRewards.CloseSlayerRewardsScreen();
   //WriteLn SlayerRewards.SlayerInterface.Title.GetTitle();
   //WriteLn SlayerRewards.OpenTab(ERSSlayerRewardsButtons.TASKS);
-end; 
+end;    
