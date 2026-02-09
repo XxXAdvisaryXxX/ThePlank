@@ -2,7 +2,6 @@
 type
   ERSSlayerRewardsButtons  = enum(UNLOCK, EXTEND, BUY, TASKS, COSMETICS);
   ERSTaskButtons           = enum(CANCEL, BLOCK , VIEW_LIST);
-  ERSInteractOptions       = enum(ASSIGNMENT , TRADE , SlayerRewards);
   ERSInterfaces            = enum(MAIN, LEFT , RIGHT);
 
 
