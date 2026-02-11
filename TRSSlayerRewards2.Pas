@@ -18,7 +18,7 @@ var
   buttonBox    : TBox;
   btnColors    : TRSButtonEnabledColorArray;
   taskColors   : TRSButtonEnabledColorArray;
-  exitBox      : TBox; //:= Bank.Title.CloseButton;
+  exitBox      : TBox; 
   isVisible    : Boolean;
 begin
   case RSClient.Mode of
