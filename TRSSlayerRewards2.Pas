@@ -18,8 +18,7 @@ var
   buttonBox    : TBox;
   btnColors    : TRSButtonEnabledColorArray;
   taskColors   : TRSButtonEnabledColorArray;
-  exitBox      : TBox; 
-  isVisible    : Boolean;
+  exitBox      : TBox;
 begin
   case RSClient.Mode of
     ERSMode.FIXED: interfaceBox := MSInterface.CreateBounds([0, 2, 0, -1], 484, 304);
@@ -101,7 +100,7 @@ begin
   Result := self.Buttons[ERSSlayerRewardsButtons.TASKS].WaitEnabled(200 , 3000);
 end;
 
-function TRSSlayerRewards.CancelTask : Boolean;
+function TRSSlayerRewards._ModifyTask(modifier : ERSTaskButtons) : Boolean;
 begin
   if not self.IsScreenOpen() then
   begin
@@ -114,29 +113,20 @@ begin
 
   if self.Buttons[ERSSlayerRewardsButtons.TASKS].Enabled then
   begin
-    self.TaskButtons[ERSTaskButtons.CANCEL].Click(EMouseButton.LEFT);
+    self.TaskButtons[modifier].Click(EMouseButton.LEFT);
     not self.Buttons[ERSSlayerRewardsButtons.TASKS].WaitEnabled(200 , 3000);
     Result := self._ConfirmationHandler();
   end;
 end;
 
-function TRSSlayerRewards.BlockTask : Boolean;
+function TRSSlayerRewards.BlockTask() : Boolean;
 begin
-  if not self.IsScreenOpen() then
-  begin
-   WriteLn GetDebugLn('SlayerRewards Screen Not Open');
-   Exit();
-  end;
+  Result := self._ModifyTask(ERSTaskButtons.BLOCK);
+end;
 
-  if not self.Buttons[ERSSlayerRewardsButtons.TASKS].Enabled then
-  self.OpenTab(ERSSlayerRewardsButtons.TASKS);
-
-  if self.Buttons[ERSSlayerRewardsButtons.TASKS].Enabled then
-  begin
-    self.TaskButtons[ERSTaskButtons.BLOCK].Click(EMouseButton.LEFT);
-    not self.Buttons[ERSSlayerRewardsButtons.TASKS].WaitEnabled(200 , 3000);
-    Result := self._ConfirmationHandler();
-  end;
+function TRSSlayerRewards.CancelTask() : Boolean;
+begin
+  Result := self._ModifyTask(ERSTaskButtons.CANCEL);
 end;
 
 var
@@ -144,4 +134,6 @@ var
 begin
   SlayerRewards.SetupInterface();
 end;
+
+
 
