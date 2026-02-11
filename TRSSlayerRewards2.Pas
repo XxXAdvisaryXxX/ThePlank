@@ -89,8 +89,7 @@ begin
    self.Buttons[tab].Click(EMouseButton.LEFT);
    self.Buttons[tab].WaitEnabled(200,1400);
 
-   if self.Buttons[tab].Enabled then
-   Result := True;
+   Result := self.Buttons[tab].Enabled;
 end;
 
 function TRSSlayerRewards._ConfirmationHandler() : Boolean;
