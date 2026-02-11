@@ -1,7 +1,7 @@
 {$INCLUDE_ONCE Wasplib/osrs.simba}
 type
   ERSSlayerRewardsButtons  = enum(UNLOCK, EXTEND, BUY, TASKS, COSMETICS);
-  ERSTaskButtons           = enum(CANCEL, BLOCK , VIEW_LIST, CONFIRMATION);
+  ERSTaskButtons           = enum(CANCEL, BLOCK , CONFIRMATION);
   ERSInterfaces            = enum(MAIN);
 
   TRSSlayerRewards = record
@@ -17,7 +17,6 @@ var
   interfaceBox : TBox;
   buttonBox    : TBox;
   btnColors    : TRSButtonEnabledColorArray;
-  taskColors   : TRSButtonEnabledColorArray;
   exitBox      : TBox;
 begin
   case RSClient.Mode of
@@ -114,7 +113,7 @@ begin
   if self.Buttons[ERSSlayerRewardsButtons.TASKS].Enabled then
   begin
     self.TaskButtons[modifier].Click(EMouseButton.LEFT);
-    not self.Buttons[ERSSlayerRewardsButtons.TASKS].WaitEnabled(200 , 3000);
+    self.Buttons[ERSSlayerRewardsButtons.TASKS].WaitEnabled(200 , 3000);
     Result := self._ConfirmationHandler();
   end;
 end;
@@ -134,6 +133,5 @@ var
 begin
   SlayerRewards.SetupInterface();
 end;
-
 
 
