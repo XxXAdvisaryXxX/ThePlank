@@ -50,10 +50,10 @@ begin
   //Buttons and title bounds setting
   self.Title.Setup(interfaceBox);
 
-  exitBox.X1 := interfacebox.X1 + 460;
-  exitBox.Y1 := interfacebox.Y1 + 5;
-  exitBox.X2 := interfacebox.X2 - 5;
-  exitBox.Y2 := interfacebox.Y2 - 295;
+  exitBox.X1 := interfaceBox.X1 + 460;
+  exitBox.Y1 := interfaceBox.Y1 + 5;
+  exitBox.X2 := interfaceBox.X2 - 5;
+  exitBox.Y2 := interfaceBox.Y2 - 295;
   self.Title.CloseButton := exitBox;
 
   buttonBox.X1 := interfaceBox.X1 +280;
@@ -71,8 +71,6 @@ begin
   self.TaskButtons[ERSTaskButtons.CANCEL] := new TRSButton(buttonBox.Offset([-50 , +70]),btnColors);
   self.TaskButtons[ERSTaskButtons.BLOCK] := new TRSButton(buttonBox.Offset([+10 , +70]),btnColors);
   self.TaskButtons[ERSTaskButtons.CONFIRMATION] := new TRSButton(buttonBox.Offset([-5 , +205]),btnColors);
-
-  ShowOnTarget(self.Title.CloseButton);
 end;
 
 function TRSSlayerRewards.IsScreenOpen() : Boolean;
@@ -145,4 +143,5 @@ var
   SlayerRewards : TRSSlayerRewards;
 begin
   SlayerRewards.SetupInterface();
-end;                                                            
+end;
+
