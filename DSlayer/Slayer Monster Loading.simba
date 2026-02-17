@@ -1,0 +1,55 @@
+{$I Wasplib/osrs.simba}
+type
+  DSlayer = record
+    List : TJSONItem;
+    MapChunk :String;
+  end;
+
+procedure DSlayer.Setup();
+begin
+  if Self.List <> nil then Exit;
+  Self.List := new TJSONParser();
+  TJSONParser(Self.List).Load({$MACRO DIR} + 'slayermonstermapinfo.json');
+end;
+
+function DSlayer.GetArray(index: Integer): TJSONItem;
+begin
+  Self.Setup();
+  Result := Self.List.Item[index];
+end;
+
+function DSlayer.GetArray(key: String): TJSONItem; overload;
+begin
+  Self.Setup();
+  if key = 'secondary_ammo' then key := 'ammo';
+  Result := Self.List.Item[key];
+end;
+
+function DSlayer.GetItems(key: Integer): TRSItemArray;
+var
+  i: Int32;
+begin
+  Self.Setup();
+  for i := 0 to Self.List.Item[key].Count-1 do
+    Result += Self.List.Item[key].Item[i].AsString;
+end;
+
+function DSlayer.GetItems(key: String): TRSItemArray; overload;
+var
+  i: Int32;
+begin
+  Self.Setup();
+  for i := 0 to Self.List.Item[key].Count-1 do
+    Result += Self.List.Item[key].Item[i].AsString;
+end;
+
+var
+  Loader : DSlayer;
+  KeyString : string;
+  FinalJSON : TJSONItem;
+begin
+  Loader.Setup();
+  FinalJSON := Loader.GetArray(1);
+  Loader.MapChunk := FinalJSON.Item[3].Item[0].Item[1].Item[0].AsString;
+  WriteLn ('This is your monster box: ' , Loader.MapChunk);
+end;
