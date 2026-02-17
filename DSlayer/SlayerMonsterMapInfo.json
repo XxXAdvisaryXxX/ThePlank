@@ -1,5 +1,17 @@
 [
-  {"monster": "Fire giant", "killshot": "null", "specialItems": ["Null", "Null", "Null"], "locations": [{"name": "Stronghold", "chunks": ["37,54,38,53", "STRONGHOLD_SLAYER_CAVE"], "planes": ["0"]}, {"name": "null", "chunks": ["5678", "5679"], "planes": ["0"]}]},
-  {"monster": "Ankou", "killshot": "null", "specialItems": ["Null", "Null", "Null"], "locations": [{"name": "Stronghold", "chunks": ["37,54,38,53", "STRONGHOLD_SLAYER_CAVE"], "planes": ["0"]}, {"name": "null", "chunks": ["5680", "5681"], "planes": ["0"]}]},
-  {"monster": "null", "killshot": "null", "specialItems": ["Null", "Null", "Null"], "locations": [{"name": "null", "chunks": ["1238", "1239"], "planes": ["2"]}, {"name": "null", "chunks": ["5682", "5683"], "planes": ["0"]}]},
+  { "monster": "Fire giant", 
+    "killshot": "null", 
+    "specialItems": ["Null", "Null", "Null"], 
+    "locations": [{"name": "Stronghold", "chunks": ["37,54,38,53", "STRONGHOLD_SLAYER_CAVE"], "planes": ["0"]}, 
+                  {"name": "null", "chunks": ["5678", "5679"], "planes": ["0"]}]},
+  { "monster": "Ankou", 
+    "killshot": "null", 
+    "specialItems": ["Null", "Null", "Null"], 
+    "locations": [{"name": "Stronghold", "chunks": ["37,54,38,53", "STRONGHOLD_SLAYER_CAVE"], "planes": ["0"]}, 
+                  {"name": "null", "chunks": ["5680", "5681"], "planes": ["0"]}]},
+  { "monster": "null", 
+    "killshot": "null", 
+    "specialItems": ["Null", "Null", "Null"], 
+    "locations": [{"name": "null", "chunks": ["1238", "1239"], "planes": ["2"]}, 
+    {"name": "null", "chunks": ["5682", "5683"], "planes": ["0"]}]}
 ]
