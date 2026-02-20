@@ -1,4 +1,0 @@
-slayer
-test
-frog
-tree
