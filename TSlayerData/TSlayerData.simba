@@ -1,0 +1,100 @@
+{$I Wasplib/osrs.simba}   
+type
+  TLoadTaskData = record
+    Parse        : TJSONParser;
+    X1,Y1,X2,Y2     : Integer;
+    Planes          : TByteArray;
+    AddPlanes       : TByteArray;
+    MonsterChunk    : TRSMapChunk;
+    MonsterAddChunk : TRSMapChunk;
+    SpecialItems    : TRSItemArray;
+  end;
+
+procedure TLoadTaskData.GetParse();
+begin
+  self.Parse := new TJSONParser();
+  self.Parse.Load({$MACRO DIR} + 'slayertask.json');
+end;
+
+function TLoadTaskData._FindMonsterInDataBase(monster : String): TJSONItem;
+var
+  iter , listCount  : Byte;
+begin
+  self.GetParse();
+  listCount := self.Parse.Count - 1;
+  for iter := 0 to listCount do
+  begin
+    if self.Parse.Item[iter].Item['monster'].AsString = monster then
+    begin
+      Result := self.Parse.Item[iter].Clone();
+      Exit;
+    end;
+  end;
+end;
+
+procedure TLoadTaskData._SetupItems(monster : String);
+var
+  monsterItems : TJSONItem;
+  iter , listCount : Byte;
+begin
+  monsterItems := self._FindMonsterInDataBase(monster);
+
+  if monsterItems.Item['specialItems'].Count < 1 then
+  exit;
+
+  listCount := ((monsterItems.Item['specialItems'].Count));
+  self.SpecialItems.SetLength(monsterItems.Item['specialItems'].Count);
+
+  for iter:= 1 to listCount do
+  begin
+    self.SpecialItems[iter - 1] := monsterItems.Item['specialItems'].Item[iter - 1].AsString;
+  end;
+end;
+
+procedure TLoadTaskData._SetupMaps(monster : String);
+var
+  dualChunks : Boolean;
+  monsterInfo : TJSONItem;
+begin
+  monsterInfo := self._FindMonsterInDataBase(monster);
+  if monsterInfo.Item['locations'].Item[0].Item['addBox'].Count = 4 then
+  dualChunks := True;
+
+  if dualChunks then
+  begin
+    WRiteLn 'Entered Dual Chunk Loading';
+    self.X1 := monsterInfo.Item['locations'].Item[0].Item['addBox'].Item[0].AsInt;
+    self.Y1 := monsterInfo.Item['locations'].Item[0].Item['addBox'].Item[1].AsInt;
+    self.X2 := monsterInfo.Item['locations'].Item[0].Item['addBox'].Item[2].AsInt;
+    self.Y2 := monsterInfo.Item['locations'].Item[0].Item['addBox'].Item[3].AsInt;
+    self.MonsterAddChunk.Chunk := [self.X1, self.Y1, self.X2, self.Y2];
+
+    self.AddPlanes.SetLength(monsterInfo.Item['locations'].Item[0].Item['addPlanes'].Count);
+    self.AddPlanes[0] := monsterInfo.Item['locations'].Item[0].Item['addPlanes'].Item[0].AsInt;
+    self.MonsterAddChunk.Planes := [self.AddPlanes[0]];
+  end;
+  self.x1 := monsterInfo.Item['locations'].Item[0].Item['box'].Item[0].AsInt;
+  self.y1 := monsterInfo.Item['locations'].Item[0].Item['box'].Item[1].AsInt;
+  self.x2 := monsterInfo.Item['locations'].Item[0].Item['box'].Item[2].AsInt;
+  self.y2 := monsterInfo.Item['locations'].Item[0].Item['box'].Item[3].AsInt;
+  self.MonsterChunk.Chunk := [self.X1, self.Y1, self.X2, self.Y2];
+
+  self.Planes.SetLength(monsterInfo.Item['locations'].Item[0].Item['planes'].Count);
+  self.Planes[0] := monsterInfo.Item['locations'].Item[0].Item['planes'].Item[0].Asint;
+  self.MonsterChunk.Planes := [self.Planes[0]];
+
+  Map.Setup([self.MonsterChunk , self.MonsterAddChunk]);
+  Map.Debug();
+end;
+
+procedure TLoadTaskData.GetMapsAndItems(monster : String);
+begin
+  self._SetupItems(monster);
+  self._SetupMaps(monster);
+end;
+
+var
+SlayerData : TLoadTaskData;
+begin
+  SlayerData.GetMapsAndItems('Ankou');
+end;
