@@ -104,7 +104,7 @@ begin
   if not self.IsPlayerTakingHits() and not self.WaitingOnKill() then
   Exit(EStates.ATTACK_GIANT);
 end;
-
+{$H-}
 procedure TRSFireGiant.FinalRun();
 var
   action : EStates;
@@ -135,7 +135,6 @@ begin
 end;
 
 //////////Form Stuff\\\\\\\\\\
-{$H-}
 var
   Form: TScriptForm;
   Config: TConfigJSON;
@@ -165,4 +164,5 @@ begin
   Form.Init();
   FireGiant.Init();
   FireGiant.FinalRun();
-end;
+end;  
+
