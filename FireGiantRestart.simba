@@ -1,0 +1,168 @@
+{$I Wasplib/osrs.simba}
+const
+  MAX_RUNTIME_MINUTES = 1200;
+type
+  EStates = Enum( NO_ACTIVITY,
+                  TAKING_DAMAGE,
+                  WAITING_FOR_KILL,
+                  ATTACK_GIANT
+                );
+
+  TRSFireGiant = Record
+    KillZone1     : TRSEntity;
+    AgroKillZone  : TRSEntity;
+    SafeSpot      : TPoint;
+    AgroSafeSpot  : TPoint;
+    MonsterSplat  : TPoint;
+  end;
+{$H-}
+procedure TRSFireGiant.DoBreakFinished(task: PBreakTask);
+begin
+  if not RSClient.IsLoggedIn() then Login.DoLogin();
+end;
+
+procedure TRSFireGiant.DoSleepFinished(task: PSleepTask);
+begin
+  if not RSClient.IsLoggedIn() then Login.DoLogin();
+end;
+{$H+}
+procedure TRSFireGiant.Init();
+begin
+  Map.Setup([Chunk(Box(39,155,41,153), 0)]);
+  Antiban.Skills := [ERSSkill.RANGED , ERSSkill.HITPOINTS];
+
+  self.KillZone1 := TRSEntity.Create(Map.Walker , [3,3,7] , 8 , [[10256, 10886]],['Fire Giant'], [ERSMiniMapDots.NPC]);
+  self.KillZone1.Finder.Colors += [$405B9D, 3.278, EColorSpace.HSL, [1.317, 0.555, 1.129]];
+  self.AgroKillZone := TRSEntity.Create(Map.Walker , [3,3,7] , 8 , [[10276, 10870]],['Fire Giant'], [ERSMiniMapDots.NPC]);
+  self.AgroKillZone.Finder.Colors += [$405B9D, 3.278, EColorSpace.HSL, [1.317, 0.555, 1.129]];
+
+  self.SafeSpot := [10268 , 10870];
+  self.AgroSafeSpot := [10272, 10858];
+end;
+
+function TRSFireGiant.IsPlayerTakingHits(): Boolean;
+var
+  playerSplat : TRSHitSplat;
+  allSplats : TRSHitSplatArray;
+begin
+  Result := playerSplat.Find(allSplats, [MainScreen.PlayerBox]);
+end;
+
+function TRSFireGiant.WalkToAgroSafeSpot() : Boolean;
+begin
+  Mouse.Move(Map.Walker.GetQuadMS(Map.Position(), Self.AgroSafeSpot, [0.9,0.9], Minimap.CompassRadians));
+  Mouse.Click(EMouseButton.RIGHT);
+  Result:= ChooseOption.Select('Walk here',True,True);
+  SleepUntil((Map.Walker.InRange(self.AgroSafeSpot , 0)), 200 , 3000);
+end;
+
+function TRSFireGiant.WalkToSafeSpot() : Boolean;
+begin
+  if Map.Walker.InRange(self.SafeSpot , 0) then
+  exit;
+
+  Mouse.Move(Map.Walker.GetQuadMS(Map.Position(), Self.SafeSpot, [0.9,0.9], Minimap.CompassRadians));
+  Mouse.Click(EMouseButton.RIGHT);
+  Result:= ChooseOption.Select('Walk here',True,True);
+  SleepUntil((Map.Walker.InRange(self.SafeSpot , 0)), 200 , 3000);
+end;
+
+function TRSFireGiant.WaitingOnKill(): Boolean;
+var
+  monsterHealth : TRSHPBar;
+  allBars       : TRSHPBarArray;
+begin
+  monsterHealth.Find(allBars);
+  if allBars.IsEmpty then
+  Exit (False);
+  if allBars[0].Percent > 1 then
+  Exit(True);
+end;
+
+function TRSFireGiant.AttackAgroGiant : Boolean;
+begin
+  Result := self.AgroKillZone.Interact(['Attack'], 2);
+  if MainScreen.RedClicked() then
+  SleepUntil(self.WaitingOnKill(), 200,5000);
+end;
+
+function TRSFireGiant.AttackGiant() : Boolean;
+begin
+  Result := self.KillZone1.Interact(['Attack'], 2);
+  if MainScreen.RedClicked() then
+  SleepUntil(self.WaitingOnKill(), 200,5000);
+end;
+
+function TRSFireGiant.GetState() : EStates;
+begin
+  if self.IsPlayerTakingHits() then
+  Exit(EStates.TAKING_DAMAGE);
+
+  if self.WaitingOnKill() then
+  Exit(EStates.WAITING_FOR_KILL);
+
+  if not self.IsPlayerTakingHits() and not self.WaitingOnKill() then
+  Exit(EStates.ATTACK_GIANT);
+end;
+
+procedure TRSFireGiant.FinalRun();
+var
+  action : EStates;
+  task: TBreakTask;
+  task2:TSleepTask;
+begin
+  while GetTimeRunning() < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
+  begin
+    @self.DoBreakFinished;
+    @self.DoSleepFinished;
+    action := self.GetState();
+    WriteLn(action);
+    case action of
+      EStates.ATTACK_GIANT:
+      begin
+        self.WalkToSafeSpot();
+        self.AttackGiant();
+      end;
+      EStates.TAKING_DAMAGE:
+      begin
+        self.WalkToAgroSafeSpot();
+        self.AttackAgroGiant();
+      end;
+      EStates.WAITING_FOR_KILL: self.WaitingOnKill();
+    end;
+    AntiBan.DoAntiban();
+  end;
+end;
+
+//////////Form Stuff\\\\\\\\\\
+{$H-}
+var
+  Form: TScriptForm;
+  Config: TConfigJSON;
+  ComboBox : TLazComboBox;
+  Tab: TLazTabSheet;
+  Item:TJSonItem;
+
+procedure TScriptForm.OnStart(sender: TLazObject); override;
+begin
+  inherited();
+  Config.Save;
+end;
+
+procedure TScriptForm.Init();
+begin
+  Config.Setup('Fire Giant Killer');
+
+  Self.Setup('Ultimate Fletcher',Item);
+
+  Self.CreateAntibanTab();
+  Self.Run();
+end;
+{$H+}
+var
+  FireGiant : TRSFireGiant;
+begin
+  Form.Init();
+  FireGiant.Init();
+  FireGiant.FinalRun();
+end;
