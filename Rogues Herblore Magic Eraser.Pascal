@@ -80,6 +80,7 @@ type
   end;
 var
   Bot : TRSClean;
+
 procedure TRSClean.SetupBankItems();
 var
   amount : Integer;
