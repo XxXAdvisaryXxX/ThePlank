@@ -83,7 +83,6 @@ var
 procedure TRSClean.SetupBankItems();
 var
   amount : Integer;
-  fuck   : TRSBankItem;
 begin
   amount := 28;
 
