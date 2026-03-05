@@ -80,7 +80,6 @@ type
   end;
 var
   Bot : TRSClean;
-
 procedure TRSClean.SetupBankItems();
 var
   amount : Integer;
@@ -120,7 +119,7 @@ begin
   Inventory.FindItem(Bot.Recipe.GrimyItem, slots);
   for slot in slots do
   begin
-    Inventory.Items.InteractSlot(slot , 'Clean');
+    Result := Inventory.Items.InteractSlot(slot , 'Clean');
     XPBar.WaitXP();
   end;
 end;
@@ -133,7 +132,7 @@ begin
   Inventory.FindItem('Vial of water' , slot);
   Inventory.ClickItem(Bot.Recipe.CleanItem , 'Use');
   Wait(600);
-  Inventory.Items.InteractSlot(slot , ' -> Vial of water');
+  Result := Inventory.Items.InteractSlot(slot , ' -> Vial of water');
   WaitUntil(Make.IsOpen(), 200, 1200);
   KeyBoard.PressKey(KEYBOARD_NUMBERS[1]);
   WaitUntil((Inventory.Items.Count(Bot.Recipe.UnfItem) = 14), 200 , 10000);
@@ -147,13 +146,13 @@ begin
   WriteLn Bank.CachedQuantity;
   if not Bot.ShouldMakeUnfinished then
   begin
-   Bank.WithdrawItem(Bot.Recipe.GrimyBankItem , False);
+   Result := Bank.WithdrawItem(Bot.Recipe.GrimyBankItem , False);
   end;
 
   if Bot.ShouldMakeUnfinished then
   begin
     Bank.WithdrawItem(Bot.Recipe.GrimyItem , False);
-    Bank.WithdrawItem('Vial of water' , False);
+    Result := Bank.WithdrawItem('Vial of water' , False);
   end;
 end;
 
@@ -169,7 +168,7 @@ type
   end;
 procedure TMyScriptForm.StartScript(sender: TObject); override;
 begin
-  inherited(); 
+  inherited(); //This is important if you use TScript.Setup()
   If Box.IsChecked() then
   Bot.ShouldMakeUnfinished := True;
 
@@ -183,7 +182,6 @@ end;
 procedure TMyScriptForm.Run(); override;
 var
   tab: TTabSheet;
-  tmp : String;
 begin
   Self.Setup('Rogues Herb Cleaning Magic Eraser');
   Self.Start.setOnClick(@Self.StartScript);
@@ -226,4 +224,4 @@ begin
  MyScriptForm.Run();
  Bot.Init();
  Bot.Withdraw();
-end;   
+end;  
