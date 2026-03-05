@@ -169,7 +169,7 @@ type
   end;
 procedure TMyScriptForm.StartScript(sender: TObject); override;
 begin
-  inherited(); //This is important if you use TScript.Setup()
+  inherited(); 
   If Box.IsChecked() then
   Bot.ShouldMakeUnfinished := True;
 
