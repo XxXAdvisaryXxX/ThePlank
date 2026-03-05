@@ -88,14 +88,13 @@ begin
 
   if Bot.ShouldMakeUnfinished then
   amount := 14;
-  Bank.CachedQuantity := amount;
 
   Bot.Recipe.VialItem := 'Vial of water';
-  Bot.Recipe.VialBankItem := self.Recipe.VialBankItem.Setup('Vial of water' , amount , True);
+  Bot.Recipe.VialBankItem := self.Recipe.VialBankItem.Setup('Vial of water' , amount , False);
 
-  Bot.Recipe.CleanBankItem := self.Recipe.CleanBankItem.Setup(Bot.Recipe.CleanItem , amount , True);
-  Bot.Recipe.GrimyBankItem := self.Recipe.GrimyBankItem.Setup(Bot.Recipe.GrimyItem , amount , True);
-  Bot.Recipe.UnfBankItem := self.Recipe.UnfBankItem.Setup(Bot.Recipe.UnfItem , amount , True);
+  Bot.Recipe.CleanBankItem := self.Recipe.CleanBankItem.Setup(Bot.Recipe.CleanItem , amount , False);
+  Bot.Recipe.GrimyBankItem := self.Recipe.GrimyBankItem.Setup(Bot.Recipe.GrimyItem , amount , False);
+  Bot.Recipe.UnfBankItem := self.Recipe.UnfBankItem.Setup(Bot.Recipe.UnfItem , amount , False);
 end;
 
 procedure TRSClean.Init();
@@ -151,7 +150,7 @@ begin
 
   if Bot.ShouldMakeUnfinished then
   begin
-    Bank.WithdrawItem(Bot.Recipe.GrimyItem , False);
+    Bank.WithdrawItem(Bot.Recipe.GrimyBankItem , False);
     Result := Bank.WithdrawItem('Vial of water' , False);
   end;
 end;
@@ -224,4 +223,4 @@ begin
  MyScriptForm.Run();
  Bot.Init();
  Bot.Withdraw();
-end;  
+end; 
