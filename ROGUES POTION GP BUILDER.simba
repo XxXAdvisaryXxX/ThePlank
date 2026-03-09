@@ -233,7 +233,7 @@ end;
 
 function TRSClean.GetState() : EStates;
 begin
-  if Bot.ShouldMakeUnfinished then;
+  if Bot.ShouldMakeUnfinished then
   begin
     Inventory.Open();
 
@@ -400,4 +400,5 @@ begin
   Bot.Init();
   Bot.FinalRun();
 end;     
+
 
