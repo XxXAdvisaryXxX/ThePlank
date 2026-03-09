@@ -1,6 +1,8 @@
 {$I SRL-T/osr.simba}
 {$I WaspLib/osr.simba}
 const
+  MAX_RUNTIME_MINUTES = 1200;
+const
   GRIMY_HERB_NAMES: TStringArray = [
     'Grimy guam leaf',
     'Grimy marrentill',
@@ -56,11 +58,12 @@ type
     GRAND_EXCHANGE);
 
   EStates = (
-    OPEN_BANK,
+    DEPOSIT_ITEMS,
     CLEAN_HERBS,
     MAKE_POTION,
     WITHDRAW_ITEMS,
-    CLOSE_BANK);
+    TERMINATE_SCRIPT
+  );
 
   TRSRecipe = record
    CleanItem     : TRSItem;
@@ -75,35 +78,58 @@ type
 
   TRSClean = record
    StartingXP           : UInt64;
+   GainedXP             : Uint64;
    ShouldMakeUnfinished : Boolean;
    Recipe               : TRSRecipe;
+   BankerObj            : TRSObjectV2;
+   GlobalTimer          : TCountDown;
+   GrimyHerbBankCount   : Int32;
   end;
 var
   Bot : TRSClean;
+
 procedure TRSClean.SetupBankItems();
 var
   amount : Integer;
-  fuck   : TRSBankItem;
 begin
   amount := 28;
 
   if Bot.ShouldMakeUnfinished then
   amount := 14;
-  Bot.Recipe.GrimyBankItem.Item := Bot.Recipe.GrimyItem;
-  Bot.Recipe.GrimyBankItem.Noted := False;
-  Bot.Recipe.GrimyBankItem.Quantity := amount;
 
   Bot.Recipe.VialItem := 'Vial of water';
-  Bot.Recipe.VialBankItem := self.Recipe.VialBankItem.Setup('Vial of water' , amount , False);
+  Bot.Recipe.VialBankItem := self.Recipe.VialBankItem.Setup(Bot.Recipe.VialItem , amount , False);
 
-  //Bot.Recipe.CleanBankItem := self.Recipe.CleanBankItem.Setup(Bot.Recipe.CleanItem , amount , False);
-  //Bot.Recipe.GrimyBankItem := self.Recipe.GrimyBankItem.Setup(Bot.Recipe.GrimyItem , amount , False);
-  //Bot.Recipe.UnfBankItem := self.Recipe.UnfBankItem.Setup(Bot.Recipe.UnfItem , amount , False);
+  Bot.Recipe.CleanBankItem := self.Recipe.CleanBankItem.Setup(Bot.Recipe.CleanItem , amount , False);
+  Bot.Recipe.GrimyBankItem := self.Recipe.GrimyBankItem.Setup(Bot.Recipe.GrimyItem , amount , False);
+  Bot.Recipe.UnfBankItem := self.Recipe.UnfBankItem.Setup(Bot.Recipe.UnfItem , amount , False);
+end;
+
+procedure TAntiban.Setup(); override;
+begin
+  Self.Skills := [ERSSkill.HERBLORE, ERSSkill.TOTAL];
+  Self.MinZoom := 10;
+  Self.MaxZoom := 65;
+
+  inherited;
+end;
+
+procedure TRSClean.CountGrimyHerbsInBank();
+begin
+  if not Bank.IsOpen() then
+  begin
+    Bot.GrimyHerbBankCount := 25;
+    Exit;
+  end;
+
+  if Bank.IsOpen() then
+  Bot.GrimyHerbBankCount := Bank.Items.CountStack(Bot.Recipe.GrimyItem);
 end;
 
 procedure TRSClean.Init();
 begin
   Bot.SetupBankItems();
+  AntiBan.Setup();
 
   if not RSClient.IsLoggedIn() then
   Login.LoginPlayer();
@@ -111,7 +137,15 @@ begin
   self.StartingXP := XPBar.Read();
   WriteLn ('Starting XP : ', self.StartingXP);
 
-  Map.SetupChunk(Chunk([49,54,49,54], 0));
+  Map.SetupChunk(Chunk([49,54,49,53], 0));
+  Bot.BankerObj.SetupEx([0.5,0.5,3.5] , [[8648 , 36662]]);
+  Bot.BankerObj.Name := 'Bank Booth';
+  Bot.BankerObj.Actions := ['Bank'];
+  Bot.BankerObj.Walker := @Map.Walker;
+  Bot.BankerObj.Finder.Colors += [CTS2(3499122, 3, 0.04, 1.98)];
+
+  Banks._AddObject(Bot.BankerObj);
+  Bot.CountGrimyHerbsInBank();
 end;
 
 function TRSClean.CleanHerbs : Boolean;
@@ -122,40 +156,161 @@ begin
   Inventory.FindItem(Bot.Recipe.GrimyItem, slots);
   for slot in slots do
   begin
-    Inventory.Items.InteractSlot(slot , 'Clean');
-    XPBar.WaitXP();
+    Result := Inventory.Items.ClickSlot(slot , 1);
   end;
+  WaitUntil((Inventory.CountItem(Bot.Recipe.GrimyItem) = 0), 200, 5000);
 end;
 
-function TRSClean.MakePotions: Boolean;
+function TRSClean.MakePotions(): Boolean;
 var
   slot : Integer;
+  herbSlots : TIntegerArray := [10 , 11 , 12 , 13];
 begin
   Bot.CleanHerbs();
+  WaitUntil ((not XPBar.EarnedXP()), 200 , 5000);
   Inventory.FindItem('Vial of water' , slot);
-  Inventory.ClickItem(Bot.Recipe.CleanItem , 'Use');
-  Wait(600);
-  Inventory.Items.InteractSlot(slot , ' -> Vial of water');
-  WaitUntil(Make.IsOpen(), 200, 1200);
-  KeyBoard.PressKey(KEYBOARD_NUMBERS[1]);
+  Inventory.Items.ClickRandomSlot(herbSlots);
+  Wait(300);
+  Result := Inventory.Items.InteractSlot(slot , ' -> Vial of water');
+  WaitUntil(Make.IsOpen(), 200, 5000);
+  Make.Select(0, -1, False);
   WaitUntil((Inventory.Items.Count(Bot.Recipe.UnfItem) = 14), 200 , 10000);
 end;
 
 function TRSClean.Withdraw() : Boolean;
 begin
-  GrandExchange.OpenBank();
-  WriteLn Bot.ShouldMakeUnfinished;
-  WriteLn Bot.Recipe.GrimyBankItem;
+  if not Bank.IsOpen() then exit;
+
+
   if not Bot.ShouldMakeUnfinished then
   begin
-   Bank.WithdrawItem(Bot.Recipe.GrimyBankItem , False);
+    Result := Bank.WithdrawItem(Bot.Recipe.GrimyBankItem , True);
+    WaitUntil((Inventory.ContainsItem(Bot.Recipe.GrimyItem)), 200 , 1200);
   end;
 
   if Bot.ShouldMakeUnfinished then
   begin
-    Bank.WithdrawItem(Bot.Recipe.GrimyItem , False);
-    Bank.WithdrawItem('Vial of water' , False);
+    Bank.WithdrawItem(Bot.Recipe.GrimyBankItem , True);
+    WaitUntil((Inventory.ContainsItem(Bot.Recipe.GrimyItem)), 200 , 1200);
+    Result := Bank.WithdrawItem(Bot.Recipe.VialBankItem , True);
+    WaitUntil((Inventory.ContainsItem(Bot.Recipe.VialItem)), 200 , 1200);
   end;
+  Bot.CountGrimyHerbsInBank();
+  Bank.Close();
+end;
+
+function TRSClean.DepositItems() : Boolean;
+begin
+  Banks.Open();
+
+  WaitUntil((Bank.IsOpen()), 1000, 5000);
+  Result := Bank.DepositAll();
+  WaitUntil((Inventory.Count = 0),200,1200);
+end
+
+procedure TRSClean.EndScript();
+begin
+ if Logout.ClickLogout() then
+ begin
+  WriteLn 'No Supplies Left : Shutting Down';
+  TerminateScript('Thanks For Using Rogue Eraser');
+ end;
+end;
+
+{$H-}
+procedure TRSClean.OnFinishBreak(Task: PBreakTask);
+begin
+  if not RSClient.IsLoggedIn() then
+  Login.LoginPlayer();
+end;
+
+procedure TRSClean.OnFinishSleep(Task: PSleepTask);
+begin
+  if not RSClient.IsLoggedIn() then
+  Login.LoginPlayer();
+end;
+{$H+}
+
+function TRSClean.GetState() : EStates;
+begin
+  if Bot.ShouldMakeUnfinished then;
+  begin
+    Inventory.Open();
+
+    if Bot.GrimyHerbBankCount < 14 then
+    Exit(EStates.TERMINATE_SCRIPT);
+
+    if (Inventory.Items.Count(Bot.Recipe.GrimyItem) = 0) and (Inventory.Items.Count(Bot.Recipe.VialItem) = 0) and (Inventory.Items.Count(Bot.Recipe.UnfItem) = 0) and Bank.IsOpen() then
+    Exit(EStates.WITHDRAW_ITEMS);
+
+    if (Inventory.Items.Count(Bot.Recipe.UnfItem) = 14) and not Bank.IsOpen(False) then
+    Exit(EStates.DEPOSIT_ITEMS);
+
+    if (Inventory.Items.Count(Bot.Recipe.GrimyItem) > 0) and (Inventory.Items.Count(Bot.Recipe.VialItem) > 0) and not Bank.IsOpen(False) then
+    Exit(EStates.MAKE_POTION);
+  end;
+
+  if not Bot.ShouldMakeUnfinished then
+  begin
+    Inventory.Open();
+
+    if Bot.GrimyHerbBankCount < 14 then
+    Exit(EStates.TERMINATE_SCRIPT);
+
+    if (Inventory.Items.Count(Bot.Recipe.GrimyItem) > 1) and (Inventory.Items.Count(Bot.Recipe.CleanItem) < 28) and not Bank.IsOpen() then
+    Exit(EStates.CLEAN_HERBS);
+
+    if (Inventory.Items.Count(Bot.Recipe.GrimyItem) = 0) and (Inventory.Items.Count(Bot.Recipe.VialItem) = 0) and (Inventory.Items.Count(Bot.Recipe.UnfItem) = 0) and Bank.IsOpen() then
+    Exit(EStates.WITHDRAW_ITEMS);
+
+    if (Inventory.Items.Count(Bot.Recipe.CleanItem) = 28) and not Bank.IsOpen(False) then
+    Exit(EStates.DEPOSIT_ITEMS);
+  end;
+end;
+
+procedure TRSClean.FinalRun();
+var
+  action : EStates;
+begin
+  while GetTimeRunning < (MAX_RUNTIME_MINUTES * ONE_MINUTE) do
+  begin
+    AntiBan.OnFinishBreak := @Bot.OnFinishBreak;
+    AntiBan.OnFinishSleep := @Bot.OnFinishSleep;
+
+    if not RSClient.IsLoggedIn() then
+    Login.LoginPlayer();
+
+    action := Bot.GetState();
+    WriteLn('Current State: ' , action);
+
+    if Bot.ShouldMakeUnfinished then
+    begin
+      Inventory.Open();
+      case action of
+        EStates.MAKE_POTION : Bot.MakePotions();
+        EStates.DEPOSIT_ITEMS : Bot.DepositItems();
+        EStates.WITHDRAW_ITEMS : Bot.Withdraw();
+        EStates.TERMINATE_SCRIPT :  Bot.EndScript();
+      end;
+    end;
+
+    if not Bot.ShouldMakeUnfinished then
+    begin
+      Inventory.Open();
+      case action of
+        EStates.CLEAN_HERBS : Bot.CleanHerbs();
+        EStates.DEPOSIT_ITEMS : Bot.DepositItems();
+        EStates.WITHDRAW_ITEMS : Bot.Withdraw();
+        EStates.TERMINATE_SCRIPT :  Bot.EndScript();
+      end;
+    end;
+    if not Bank.IsOpen then
+    begin
+      Bot.GainedXP := (XPBar.Read() - Bot.StartingXP);
+      WriteLn ('XP Gained This Session :' , Bot.GainedXP);
+    end;
+    AntiBan.DoAntiban(True, True);
+  end
 end;
 
 type
@@ -164,10 +319,12 @@ type
     GrimyCombo : TLabeledComboBox;
     CleanCombo : TLabeledComboBox;
     UnfCombo   : TLabeledComboBox;
+    Tab        : TTabSheet;
     GrimyHerbs : UInt64;
     CleanHerbs : UInt64;
     UnfPots    : UInt64;
   end;
+{$H-}
 procedure TMyScriptForm.StartScript(sender: TObject); override;
 begin
   inherited(); //This is important if you use TScript.Setup()
@@ -178,56 +335,69 @@ begin
 
   Bot.Recipe.CleanItem := CleanCombo.GetText();
 
+  if Bot.ShouldMakeUnfinished then
   Bot.Recipe.UnfItem := UnfCombo.GetText();
+
+  if not Bot.ShouldMakeUnfinished then
+  Bot.Recipe.UnfItem := GrimyCombo.getText();
+end;
+
+procedure TMyScriptForm.SetOnChange(sender: TObject);
+begin
+  if Box.IsChecked then
+  begin
+    UnfCombo.Create(Tab,'Choose Unfinished Potion ','Dont have to choose if not making UNF Pots' ,[10,325],[225,35], True);
+
+    for UnfPots := Low(UNF_POTION_NAMES) to High(UNF_POTION_NAMES) do
+    UnfCombo.AddItem(UNF_POTION_NAMES[UnfPots]);
+  end;
+
+  if not Box.IsChecked() then
+  begin
+    UnfCombo.ComboBox.setVisible(False);
+    UnfCombo.Panel.setVisible(False);
+    UnfCombo.Caption.setVisible(False);
+  end;
 end;
 
 procedure TMyScriptForm.Run(); override;
-var
-  tab: TTabSheet;
-  tmp : String;
 begin
   Self.Setup('Rogues Herb Cleaning Magic Eraser');
   Self.Start.setOnClick(@Self.StartScript);
 
   Self.AddTab('Script Settings');
-  tab := Self.Tabs[High(Self.Tabs)];
+  Tab := Self.Tabs[High(Self.Tabs)];
 
-  Self.CreateAccountManager(tab);
+  Self.CreateAccountManager(Tab);
 
-  Box.Create(tab,'Make into Unfinished??','If checked, will clean and create Unfinsihed',[10,300],[1,1]);
+  Box.Create(Tab,'Make into Unfinished??','If checked, will clean and create Unfinsihed',[10,300],[1,1]);
 
-  GrimyCombo.Create(tab,'Choose Grimy Herb ','Choose Your Grimy Herb' ,[10,175],[225,35], True);
+  GrimyCombo.Create(Tab,'Choose Grimy Herb ','Choose Your Grimy Herb' ,[10,175],[225,35], True);
   for GrimyHerbs := Low(GRIMY_HERB_NAMES) to High(GRIMY_HERB_NAMES) do
   begin
     GrimyCombo.AddItem(GRIMY_HERB_NAMES[GrimyHerbs]);
   end;
 
-  CleanCombo.Create(tab,'Choose Clean Herb ','Choose Clean Herb' ,[10,225],[225,35], True);
+  CleanCombo.Create(Tab,'Choose Clean Herb ','Choose Clean Herb' ,[10,225],[225,35], True);
   for CleanHerbs := Low(CLEAN_HERB_NAMES) to High(CLEAN_HERB_NAMES) do
   begin
     CleanCombo.AddItem(CLEAN_HERB_NAMES[CleanHerbs]);
   end;
 
-  UnfCombo.Create(tab,'Choose Unfinished Potion ','Dont have to choose if not making UNF Pots' ,[10,325],[225,35], True);
-  for UnfPots := Low(UNF_POTION_NAMES) to High(UNF_POTION_NAMES) do
-  begin
-    UnfCombo.AddItem(UNF_POTION_NAMES[UnfPots]);
-  end;
+  Box.CheckBox.SetOnChange(@Self.SetOnChange);
 
   Self.CreateAntibanManager();
   Self.CreateWaspLibSettings();
 
   inherited();
 end;
+{$H+}
 var
   MyScriptForm: TMyScriptForm;
 
-
 begin
- MyScriptForm.Run();
- Bot.Init();
- Bot.Withdraw();
- //Bot.MakePotions();
- //Bot.CleanHerbs();
- //GrandExchange.OpenBank();
-end;
+  MyScriptForm.Run();
+  Bot.Init();
+  Bot.FinalRun();
+end;     
+
