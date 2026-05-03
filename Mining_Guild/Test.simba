@@ -1,4 +1,0 @@
-{$I Wasplib/osrs.simba}   
-begin
-  RunSimbaScript('test2' , ['']);
-end;
