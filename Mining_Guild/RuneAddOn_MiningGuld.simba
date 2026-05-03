@@ -1,0 +1,67 @@
+
+{$I Wasplib/osrs.simba}
+{$I Scripts/Mining_Guild/Alpha_Mining_Lib.simba}
+
+var
+  RuneSpotPoint : TPoint := [12212 , 11542];
+
+function TMiningGuild.MineRock(rock : TRSObject ; lock : TPoint = [0 , 0]) : Boolean; override;
+begin
+  If Minimap.HasSpecial() = True and Mine.Spec100() = True then
+  Mine.ShouldSpec(); //Controls the special attack
+
+  if HaveBag and (Inventory.Slots.CountEmpty() < 8) and not Mine.Bag.Full then
+  Mine.FillCoalBag();  //sets the coal bag to check and fill coal. Will stop checking after bag is confirmed filled. Restarts on bankdeposit fuction.
+
+  if lock <> [0 , 0] then  //if we put a TPoint in lock paramater, it locks us to that point. Used in Powermining.
+  begin
+    if not Map.Walker.InRange(lock , 20) then
+    begin
+      Map.Walker.WebWalk(lock , 0 , 1.0 , False);
+      SleepUntil(not MiniMap.IsPlayerMoving() , 300 , 6000);
+    end;
+    MiniMap.CompassDegrees := 100;
+  end;
+
+  if not rock.Click(True , 1) then
+  begin
+    rock.WalkHover(['Mine'] , 50);
+    SleepUntil(not MiniMap.IsPlayerMoving() , 300 , 6000);
+  end;
+
+  if ShouldHop then
+  begin
+    case Mine.GUI.RockType.UpText[0] of   //depeding on rock type , sets the amount of players around to hop.
+      ROCK_TYPE[0] : Mine.HopIfMoreThanXPlayersAround(2);
+      ROCK_TYPE[1] : Mine.HopIfMoreThanXPlayersAround(2);
+      ROCK_TYPE[2] : Mine.HopIfMoreThanXPlayersAround(2);
+      ROCK_TYPE[3] : Mine.HopIfMoreThanXPlayersAround(2);
+      ROCK_TYPE[5] : Mine.HopIfMoreThanXPlayersAround(3);
+    end;
+  end;
+  Result:= SleepUntil(not Mine.IsMining()  , 300 , 60000);
+end;
+
+function TMiningGuild.IsRuneRockOnScreen() : Boolean;
+begin
+  Result := Mine.RockObjects[4].IsVisible();
+end;
+
+begin
+  GUI.Init(True);
+  Mine.Setup();
+  while True do
+  begin
+    repeat
+      if not Mine.IsRuneRockOnScreen() then
+      WorldSwitcher.Random();
+
+      if Mine.IsRuneRockOnScreen() and not Inventory.IsFull() then
+      Mine.MineRock(Mine.RockObjects[4] , RuneSpotPoint);
+
+    until Inventory.IsFull();
+
+    if Mine.OpenBankDeposit() then
+    Map.Walker.WebWalk(RuneSpotPoint, 8 , 1.00 , False);
+  end;
+end;

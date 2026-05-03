@@ -1,0 +1,497 @@
+{$I Wasplib/osrs.simba}
+const
+  ORE_MATERIAL : TStringArray =['Iron ore' , 'Coal' , 'Mithril ore' , 'Adamantite ore' , 'Runite ore' , 'Amethyst'];
+  ROCK_TYPE    : TStringArray =['Iron rocks' , 'Coal rocks' , 'Mithril rocks' , 'Adamantite rocks' , 'Runite rocks' , 'Amethyst crystals'];
+  PICKAXE      : TStringArray =['Rune pickaxe' , 'Dragon pickaxe' , 'Crystal pickaxe' , 'Gilded pickaxe' , 'Dragon pickaxe (or)' , 'Dragon pickaxe (upgraded)' , 'Dragon pickaxe (or) (Trailblazer)'];
+  BAR_TYPE     : TStringArray =['Iron bar' , 'Steel bar' , 'Mithril bar' , 'Adamantite bar' , 'Runite bar'];
+type
+  EAction = Enum(OPEN_BANK , MINE , SUPERHEAT , TRANSACT , CLOSE_BANK , DROP , FILL_COAL_BAG);
+  TGUI = record
+    RockType : TRSObject;
+    BarType  : TRSItem;
+    PickAxeType : TRSItem;
+  end;
+
+  TStatTracker = record
+    OnStartXP       : UInt64;
+    CurrentGainedXP : UInt64;
+    OresMined       : Integer;
+    BarsMade        : Integer;
+  end;
+
+  TCoalBag = record
+    Count  : Int64;
+    Empty  : Boolean;
+    Full   : Boolean;
+  end;
+
+  TSuperHeat = record
+    CoalInInventory : Integer;
+    PrimaryOre      : TRSItem;
+    OreAmount       : Integer;
+    BarToBeMade     : TRSItem;
+  end;
+
+  TMiningGuild = record
+    RockObjects  : TRSObjectArray;
+    BankObject   : TRSObject;
+    SelectedRock : TRSObject;
+    IronArea     : TPointArray;
+    CoalArea     : TPointArray;
+    AmethystArea : TPointArray;
+    Others       : TPointArray;
+    WholeArea    : TPointArray;
+    Stats        : TStatTracker;
+    Heat         : TSuperHeat;
+    Bag          : TCoalBag;
+    GUI          : TGUI;
+  end;
+{$H-}
+var
+  Mine                : TMiningGuild;
+  BankIronTPoint      : TPoint := [12084 , 11546];
+  PowerMineIronTPoint : TPoint := [12116 , 11550];
+  CloseToBankTPoint   : TPoint := [12056 , 11556];
+  RuneTimer           : TCountDown;
+  HaveBag             : Boolean;
+  PowerMine           : Boolean;
+  ShouldHop           : Boolean;
+procedure TMiningGuild.DoBreakFinished(task: PBreakTask);
+begin
+  if not RSClient.IsLoggedIn() then Login.DoLogin();
+end;
+
+procedure TMiningGuild.DoSleepFinished(task: PSleepTask);
+begin
+  if not RSClient.IsLoggedIn() then Login.DoLogin();
+end;
+
+procedure TMiningGuild.Spec(); //see's if spec is available
+begin
+ If Minimap.HasSpecial() then
+ Minimap.Toggle (ERSMinimapOrb.SPECIAL);
+end;
+
+procedure TMiningGuild.ShouldSpec();//engages spec
+begin
+  If Minimap.GetPercent(ERSMiniMapOrb.SPECIAL)=100 then
+  Mine.Spec();
+  SleepUntil ((Minimap.GetPercent(ERSMiniMapOrb.SPECIAL)=0),200,2000);
+end;
+
+function TMiningGuild.Spec100(): Boolean; //See's if our spec is full or not
+begin
+  If Minimap.GetPercent(ERSMiniMapOrb.SPECIAL)=100 then
+  result:=True;
+end;
+{$H+}
+
+function TRSWorldSwitcher._Hop(next: Integer): Boolean; Override;
+var
+  timeout: TCountDown;
+  available: TRSWorldArray;
+  world: TRSWorld;
+begin
+  if not Self.IsSorted() and not Self.Sort() then
+    Exit;
+
+  timeout.Start(20 * ONE_SECOND);
+
+  repeat
+    //Sleep(20,40);
+    available := Self.GetWorlds();
+    if available = [] then Exit;
+
+    for world in available do
+      if world.Number = next then
+      begin
+        Mouse.Move(world.Bounds , True , EMouseDistribution.SKEWED);
+        Mouse.Click(world.Bounds, EMouseButton.LEFT);
+        if Self.WaitSwitch(next) then
+          Exit(True);
+      end;
+
+    Self.Scroll.Scroll(Biometrics.RandomModeInteger(2,1,3), next > available[0].Number);
+  until not InRange(Self.Scroll.GetLevel(), 1, 99) or timeout.IsFinished;
+end;
+
+procedure TMiningGuild.SetupAreas(); //Sets up our object tpointarrays for location
+begin
+  Map.Setup([Chunk(Box(46,152,47,151), 0)]);
+
+  Mine.WholeArea := Mine.WholeArea.CreateFromBox([7940 + 4096, 11514 , 8140 + 4096 , 11650] , True);
+  Mine.IronArea := Mine.IronArea.CreateFromBox([7980 + 4096, 11522 , 8032 + 4096 , 11562] , True);
+  Mine.AmethystArea := Mine.AmethystArea.CreateFromBox([7968 + 4096, 11574 , 8028 + 4096 , 11638] , True);
+  Mine.CoalArea := Mine.CoalArea.CreateFromBox([7960 + 4096, 11522 , 8092 + 4096 , 11582] , True);
+  Mine.Others := Mine.Others.CreateFromBox([8020 + 4096, 11510 , 8140 + 4096 , 11586] , True);
+end;
+
+procedure TMiningGuild.SetupRocks();
+begin
+  Mine.RockObjects.SetLength(10);
+
+  Mine.RockObjects[0]{IRON Rock} := TRSObject.Create(Map.Walker , [1,1,3] , Mine.IronArea , [ROCK_TYPE[0]]);
+  Mine.RockObjects[0].Finder.Colors += [$202B42, 2.488, EColorSpace.HSV, [1.221, 1.158, 0.623]];
+
+  Mine.RockObjects[1]{Coal} := TRSObject.Create(Map.Walker , [1,1,3] , Mine.CoalArea , [ROCK_TYPE[1]]);
+  Mine.RockObjects[1].Finder.Colors += [$263434, 0.744, EColorSpace.HSL, [1.665, 0.806, 0.531]];
+
+  Mine.RockObjects[2]{Mithril} := TRSObject.Create(Map.Walker , [1,1,3] , Mine.Others , [ROCK_TYPE[2]]);
+  Mine.RockObjects[2].Finder.Colors += [$6D4F4E, 1.156, EColorSpace.HSL, [0.854, 1.830, 0.317]];
+
+  Mine.RockObjects[3] := TRSObject.Create(Map.Walker , [1,1,3] , Mine.Others , [ROCK_TYPE[3]]);
+  Mine.RockObjects[3].Finder.Colors += [$566856, 0.512, EColorSpace.HSL, [1.404, 1.404, 0.194]];
+
+  Mine.RockObjects[4] := TRSObject.Create(Map.Walker , [1,1,3] , Mine.Others , [ROCK_TYPE[4]]);
+  Mine.RockObjects[4].Finder.Colors += [$9E9970, 0.820, EColorSpace.HSL, [2.032, 0.585, 0.384]];
+
+  Mine.RockObjects[5] := TRSObject.Create(Map.Walker , [1,1,3] , Mine.AmethystArea , [ROCK_TYPE[5]]);
+  Mine.RockObjects[5].Finder.Colors += [$85719E, 0.838, EColorSpace.HSL, [2.003, 0.608, 0.391]];
+end;
+
+procedure TMiningGuild.SetupBankChest();
+begin
+  Mine.BankObject := TRSObject.Create(Map.Walker , [1,1,3] , [[12048 , 11558]] , ['Bank chest']);
+  Mine.BankObject.Finder.Colors += [$5D5D63, 1.024, EColorSpace.HSL, [0.315, 2.357, 0.330]];
+end;
+
+procedure TMiningGuild.SetupSuperHeating(loadByBarType : TRSItem);
+begin
+  if loadByBarType = BAR_TYPE[0] then// Iron Bar
+  begin
+    Mine.Heat.PrimaryOre := ORE_MATERIAL[0]; //sets up iron ore to use
+    Mine.Heat.BarToBeMade := BAR_TYPE[0];    //sets Iron Bars To Be Made
+  end;
+
+  if loadByBarType = BAR_TYPE[1] then  //Steel Bars
+  begin
+    Mine.Heat.PrimaryOre := ORE_MATERIAL[1]; //sets up Iron ores to use
+    Mine.Heat.BarToBeMade := BAR_TYPE[1];    //sets mith Steel Bars To Be Made
+    Mine.Heat.OreAmount := 17;
+    Mine.Heat.CoalInInventory := 7;
+  end;
+
+  if loadByBarType = BAR_TYPE[2] then  //Mith Bars
+  begin
+    Mine.Heat.PrimaryOre := ORE_MATERIAL[2]; //sets up mith to use
+    Mine.Heat.BarToBeMade := BAR_TYPE[2];    //sets mith Mith bars To Be Made
+    Mine.Heat.OreAmount := 10;
+    Mine.Heat.CoalInInventory := 13;
+  end;
+
+  if loadByBarType = BAR_TYPE[3] then  //addybars
+  begin
+    Mine.Heat.PrimaryOre := ORE_MATERIAL[3]; //sets up addy ore to use
+    Mine.Heat.BarToBeMade := BAR_TYPE[3];    //sets addy Bars To Be Made
+    Mine.Heat.OreAmount := 7;
+    Mine.Heat.CoalInInventory := 15;
+  end;
+end;
+
+procedure TMiningGuild.Setup(superHeat : Boolean = False);
+begin
+  Mine.SetupAreas();
+  Mine.SetupRocks();
+  Mine.SetupBankChest();
+
+  AntiBan.Zoom.Min := 25;
+  AntiBan.Zoom.Max := 52;
+
+  if Inventory.Items.Contains('Coal bag') then
+  HaveBag := True else
+  HaveBag := False;
+
+  if superHeat then
+  Mine.SetupSuperHeating(BAR_TYPE[3]);
+
+  Mine.Stats.OnStartXP := XPBar.Read();
+
+  WriteLn ('Do We Have Coal Bag?: ' , HaveBag);
+end;
+
+function TMiningGuild.HopIfMoreThanXPlayersAround(x : Integer) : Boolean;
+var
+  mmBox : TBox =[634 , 75 , 650, 93];
+  playersTPA : TPointArray;
+begin
+  playersTPA := MiniMap.GetDots(ERSDot.PLAYER , mmBox);
+  if playersTPA.Length >= x then
+  begin
+    WorldSwitcher.Open(True);
+    Result := WorldSwitcher.Random();
+  end;
+end;
+
+function TMiningGuild._PercentPixelDiff(Area: TBox; WaitTime: Int32): Int32;   //writes pixel shift in %
+var
+  tLen,sLen: Int32;
+begin
+  tLen := TPointArray.CreateFromBox(Area, True).Length;
+  sLen := Target.GetPixelDifference(WaitTime, Area).Length;
+  result := Round((sLen/tLen)*100);
+end;
+
+function TMiningGuild.IsMining:Boolean; //If our pixel shift is above 12% in playerbox; then we return true.
+begin
+  If (self._PercentPixelDiff ((Mainscreen.PlayerBox),400))>12 then
+  result:=True;
+end;
+
+procedure TMiningGuild.CacheCoalBag(); //Gets count and fills out other info about coal bag.
+var
+  tmpString : String;
+begin
+  Inventory.Items.Interact('Coal bag' , 'Check');
+
+  if Chat.GetMessage(7).Contains('is' , True) then
+  begin
+    Mine.Bag.Empty := True;
+    Mine.Bag.Full  := False;
+  end;
+
+  if Chat.GetMessage(7).Between('contains ' , ' pieces') <> '' then
+  begin
+    tmpString := Chat.GetMessage(7).Between('contains ' , ' pieces');
+    Mine.Bag.Count := tmpString.ToInt();
+
+    if Mine.Bag.Count = 27 then
+    begin
+      Mine.Bag.Full := True;
+      Mine.Bag.Empty := False;
+    end;
+  Mine.Bag.Empty := False;
+  end;
+  WriteLn('Full: ' , Mine.Bag.Full , '||||||||' , 'Empty: ' , Mine.Bag.Empty , '||||||' , 'Count: ' , Mine.Bag.Count);
+end;
+
+function TMiningGuild.FillCoalBag() : Boolean;
+begin
+  Mine.CacheCoalBag();
+  Sleep(300,600);
+
+  if Mine.Bag.Full then
+  begin
+    WriteLn 'Bag is Full';
+    Exit(True);
+  end;
+  Result := Inventory.Items.Click('Coal bag' , EMouseButton.LEFT);
+end;
+
+function TMiningGuild.MineRock(rock : TRSObject ; lock : TPoint = [0 , 0]) : Boolean;
+begin
+  If Minimap.HasSpecial() = True and Mine.Spec100() = True then
+  Mine.ShouldSpec(); //Controls the special attack
+
+  if HaveBag and (Inventory.Slots.CountEmpty() < 8) and not Mine.Bag.Full then
+  Mine.FillCoalBag();  //sets the coal bag to check and fill coal. Will stop checking after bag is confirmed filled. Restarts on bankdeposit fuction.
+
+  if lock <> [0 , 0] then  //if we put a TPoint in lock paramater, it locks us to that point. Used in Powermining.
+  begin
+    if not Map.Walker.InRange(lock , 0) then
+    begin
+      Map.Walker.WebWalk(lock , 0 , 1.0 , False);
+      SleepUntil(not MiniMap.IsPlayerMoving() , 300 , 6000);
+    end;
+    MiniMap.CompassDegrees := 100;
+  end;
+
+  if not rock.Click(True , 1) then
+  begin
+    rock.WalkHover(['Mine'] , 50);
+    SleepUntil(not MiniMap.IsPlayerMoving() , 300 , 6000);
+  end;
+
+  if ShouldHop then
+  begin
+    case Mine.GUI.RockType.UpText[0] of   //depeding on rock type , sets the amount of players around to hop.
+      ROCK_TYPE[0] : Mine.HopIfMoreThanXPlayersAround(2);
+      ROCK_TYPE[1] : Mine.HopIfMoreThanXPlayersAround(2);
+      ROCK_TYPE[2] : Mine.HopIfMoreThanXPlayersAround(2);
+      ROCK_TYPE[3] : Mine.HopIfMoreThanXPlayersAround(2);
+      ROCK_TYPE[5] : Mine.HopIfMoreThanXPlayersAround(3);
+    end;
+  end;
+  Result:= SleepUntil(not Mine.IsMining()  , 300 , 60000);
+end;
+
+function TMiningGuild.OpenBankDeposit(superheating : Boolean = False ; ironBar : Boolean = False ; bag : Boolean = False) : Boolean;
+begin
+  if not Map.Walker.InRange(Mine.BankObject.Coordinates[0] , 16) then
+  Map.Walker.WebWalk(CloseToBankTPoint , 10 , 1.00 , False);
+
+  if not Map.Walker.InRange(Mine.BankObject.Coordinates[0] , 20) then
+  begin
+    Mine.BankObject.WalkHover(['Use'] , 5);
+    SleepUntil(not MiniMap.IsPlayerMoving() , 300 , 25000);
+  end;
+  Mine.BankObject.Click(True , 1);
+  SleepUntil(Bank.IsOpen() , 300 , 10000);
+
+  if not Bank.IsOpen() then
+  Exit(False);
+
+  if superheating then
+  begin
+    if ironBar then
+    Bank.Deposit('Iron bar' , False);
+
+    if Bank.DepositDifferent(['Nature rune' , 'Coal bag' , 'Dragon pickaxe']) then
+    Sleep(1200);
+    Result := Bank.Close(False);
+    Mine.Bag.Full := False;
+  end;
+
+  if not superheating then
+  begin
+    if bag then
+    begin
+      if Bank.DepositDifferent(['Coal bag']) then
+      begin
+        Sleep(500,800);
+        Bank.DepositContainers();
+        Sleep(400 , 800);
+        Result := Bank.Close(False);
+        Mine.Bag.Full := False;
+        Exit;
+      end;
+    end;
+    if Bank.DepositInventory() then
+    Result := Bank.Close(False);
+  end;
+end;
+
+procedure TMiningGuild.SuperHeatBars();
+var
+  slots : TIntegerArray;
+  slot  : Integer;
+begin
+  Inventory.Items.FindAll([Mine.Heat.PrimaryOre] , slots);
+  for slot in slots do
+  begin
+    if not Magic.IsOpen() then
+    Magic.Open();
+
+    Magic.Click(ERSSpell.SUPERHEAT_ITEM , EMouseButton.LEFT);
+
+    SleepUntil(Inventory.IsOpen() , 1 , 2000);
+    Inventory.Slots.Click(slot , EMouseButton.LEFT);
+    Sleep(1900,2500);
+  end;
+end;
+
+function TMiningGuild.DropOre() : Boolean;
+begin
+  Result := Inventory.ShiftDrop(['Iron ore' , 'Uncut sapphire' , 'Uncut ruby' , 'Uncut diamond' , 'Uncut emerald'] , Inventory.RandomPattern());
+end;
+
+var
+  GUI               : TScriptForm;
+  Config            : TConfigJSON;
+  MiningTab         : TLazTabSheet;
+  PowerMineCheckBox : TLazCheckBox;
+  ShouldHopCheckBox : TLazCheckBox;
+  //SuperheatCheckBox : TLazCheckBox;
+  RockTypeCombo     : TLazComboBox;
+  JSONItem          : TJSONItem;
+
+procedure GUI.OnStart(sender: TLazObject); override;
+begin
+  inherited();
+  {if PowerMineCheckBox.IsChecked() then
+  PowerMine := True;
+
+  if not PowerMineCheckBox.IsChecked() then
+  PowerMine := False;
+
+  if ShouldHopCheckBox.IsChecked() then
+  ShouldHop := True;
+
+  if not ShouldHopCheckBox.IsChecked() then
+  ShouldHop := False;
+
+  Mine.SetupAreas();//Gotta call these to access Mine.RockObjects[0..5]
+  Mine.SetupRocks();
+  case RockTypeCombo.Text of  //Sets Objects for calling procedures and functions. Use Mine.GUI.RockType to access GUI loaded object
+    ROCK_TYPE[0] : Mine.GUI.RockType:= Mine.RockObjects[0];
+    ROCK_TYPE[1] : Mine.GUI.RockType:= Mine.RockObjects[1];
+    ROCK_TYPE[2] : Mine.GUI.RockType:= Mine.RockObjects[2];
+    ROCK_TYPE[3] : Mine.GUI.RockType:= Mine.RockObjects[3];
+    ROCK_TYPE[5] : Mine.GUI.RockType:= Mine.RockObjects[5];
+  end;
+  WriteLn Mine.GUI.RockType;}
+  Config.Save();
+end;
+
+procedure GUI.Init();
+var
+  rockString : String;
+begin
+  Config.Setup('AdvisaryScripts');
+  GUI.Setup('Advisary 2k Mining Guild Alpha' , JSONItem);
+  MiningTab := GUI.CreateTab('Mining - Options');
+
+  ShouldHopCheckBox := TLazCheckBox.CreateEx(MiningTab,'World Hop?','WARNING : SET YOUR PROFILE WORLDS. CLICK EDIT PROFILE ON GUI',10,250,100,100);
+  PowerMineCheckBox := TLazCheckBox.CreateEx(MiningTab,'PowerMine','Drop Ores?',10,275,100,100);
+
+  RockTypeCombo := TLazComboBox.CreateEx(MiningTab,'Choose Rock To Mine:','None',10,325,100,100);
+
+  for rockString in ROCK_TYPE do
+  begin
+    RockTypeCombo.Items.Add(rockString);
+  end;
+  RockTypeCombo.Items.Delete(4);
+  GUI.CreateAntibanTab();
+  GUI.Run();
+end;
+{$H-}
+procedure GUI.Init(rune : Boolean); Overload;
+begin
+  Config.Setup('AdvisaryScripts');
+  GUI.Setup('Advisary 2k Rune Rocks' , JSONItem);
+  //MiningTab := GUI.CreateTab('Mining - Options');
+
+  //ShouldHopCheckBox := TLazCheckBox.CreateEx(MiningTab,'World Hop?','WARNING : SET YOUR PROFILE WORLDS. CLICK EDIT PROFILE ON GUI',10,250,100,100);
+  //PowerMineCheckBox := TLazCheckBox.CreateEx(MiningTab,'PowerMine','Drop Ores?',10,275,100,100);
+
+  //RockTypeCombo := TLazComboBox.CreateEx(MiningTab,'Choose Rock To Mine:','None',10,325,100,100);
+
+  //for rockString in ROCK_TYPE do
+  //begin
+   // RockTypeCombo.Items.Add(rockString);
+  //end;
+  //RockTypeCombo.Items.Delete(4);
+  GUI.CreateAntibanTab();
+  GUI.Run();
+end;
+{$H-}
+begin
+  {GUI.Init();
+  Mine.Setup();
+  while true do
+  begin
+    if PowerMine then
+    begin
+      repeat
+      Mine.MineRock(Mine.GUI.RockType , PowerMineIronTPoint);
+      until
+      Inventory.IsFull();
+
+      Mine.DropOre();
+    end;
+
+    if not PowerMine then
+    begin
+      repeat
+      Mine.MineRock(Mine.GUI.RockType);
+      until
+      Inventory.IsFull();
+      Mine.OpenBankDeposit(False , False , HaveBag);
+    end;
+    WriteLn ('XP Gained : ' , (XPBar.Read() - Mine.Stats.OnStartXP));
+    AntiBan.OnFinishBreak := @Mine.DoBreakFinished;
+    AntiBan.OnFinishSleep := @Mine.DoSleepFinished;
+    AntiBan.DoAntiban();
+  end;}
+end;
+
+
