@@ -1,4 +1,4 @@
-{$I Wasplib/osrs.simba}
+{$INCLUDE_ONCE Wasplib/osrs.simba}
 const
   ORE_MATERIAL : TStringArray =['Iron ore' , 'Coal' , 'Mithril ore' , 'Adamantite ore' , 'Runite ore' , 'Amethyst'];
   ROCK_TYPE    : TStringArray =['Iron rocks' , 'Coal rocks' , 'Mithril rocks' , 'Adamantite rocks' , 'Runite rocks' , 'Amethyst crystals'];
