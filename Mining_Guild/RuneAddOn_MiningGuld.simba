@@ -1,5 +1,5 @@
 
-{$I Wasplib/osrs.simba}
+{$INCLUDE_ONCE Wasplib/osrs.simba}
 {$I Scripts/Mining_Guild/Alpha_Mining_Lib.simba}
 
 var
