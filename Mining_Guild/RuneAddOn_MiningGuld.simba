@@ -63,5 +63,6 @@ begin
 
     if Mine.OpenBankDeposit() then
     Map.Walker.WebWalk(RuneSpotPoint, 8 , 1.00 , False);
+    AntiBan.DoAntiban();
   end;
 end;
