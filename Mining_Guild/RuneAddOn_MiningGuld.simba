@@ -25,7 +25,7 @@ begin
 
   if not rock.Click(True , 1) then
   begin
-    rock.WalkHover(['Mine'] , 50);
+    rock.WalkHover(['Mine'] , 2);
     SleepUntil(not MiniMap.IsPlayerMoving() , 300 , 6000);
   end;
 
